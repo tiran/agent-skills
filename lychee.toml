@@ -1,0 +1,13 @@
+# Config for the lychee link checker (used by .github/workflows/ci.yml).
+# Throttle per-host requests so the external-link check doesn't trip rate limits
+# (e.g. labs.quansight.org), and treat 429 / timeouts as acceptable — they mean
+# "slow down", not "broken link".
+max_concurrency = 8
+host_request_interval = "500ms"
+accept = ["200..=204", "429"]
+accept_timeouts = true
+
+# Give the slow, rate-limiting host extra breathing room.
+[hosts."labs.quansight.org"]
+concurrency = 1
+request_interval = "2s"
