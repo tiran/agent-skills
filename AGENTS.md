@@ -43,6 +43,12 @@ skills need a closer human review of their results.
   **≤50 characters** (capitalized, no trailing period), a blank line, then a body
   wrapped at **72 columns** explaining the *why* / user impact — not a file-by-file
   changelog. Keep it terse; omit the body for trivial changes.
+  **Optimize for human readability:** write the body for a reviewer skimming
+  `git log` — focus on the important change, cut restated detail and boilerplate,
+  and prefer a short message over an exhaustive one.
+- **PR title and description mirror the commit** — reuse the commit subject as the
+  PR title and the commit body as the description. Don't pad the PR with boilerplate
+  the commit doesn't have (no invented "Testing" / "Changes" sections).
 - **Always sign off commits** (`git commit -s`) — add the `Signed-off-by` line
   (DCO).
 
