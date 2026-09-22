@@ -119,6 +119,27 @@ group, so relocating a dev set there breaks their wiring:
   **Hatch** (project/env manager) version, not **hatchling** (the build backend):
   groups aren't build metadata, so the backend's version is irrelevant — only the
   env-runner's is.
+
+  **Enforce the floor in-tree with `tool.hatch.requires-hatch`.** Hatch checks
+  this specifier at runtime and refuses to run when the installed version is too
+  old — better than relying on every contributor and CI step to pin the version
+  by hand:
+
+  ```toml
+  [tool.hatch]
+  requires-hatch = ">=1.18.0"
+  ```
+
+  **Gotcha: the `requires-hatch` field itself was only added in Hatch 1.18.0**
+  (2026-08-11), and older versions **silently ignore it**. So a `requires-hatch = ">=1.16.3"`
+  is unenforceable on exactly the 1.16.x/1.17.x versions it would target — they
+  skip the check and then fail later with an empty env (nothing installed from
+  the group), which is harder to diagnose than a clean version error. Pin
+  `requires-hatch = ">=1.18.0"` (the lowest version where the mechanism actually
+  bites), which also supersedes the 1.16.3 functional floor. Keep the CI install
+  pins and contributor docs on the **same** `>=1.18.0` bound so there's one
+  coherent floor. (`requires-hatch` value is any PEP 440 specifier set; docs:
+  <https://hatch.pypa.io/latest/how-to/config/constrain-hatch/>.)
 - **tox / nox / CI steps** that install `.[test]` (an extra) rather than
   `--group test` have the same problem.
 
