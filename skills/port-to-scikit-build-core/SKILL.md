@@ -63,7 +63,15 @@ removed 2026-07-20): <https://dev-discuss.pytorch.org/t/3414>.
 > heavy compile** (torch/CUDA are multi-GB); match the project's existing style and
 > keep comments/docstrings terse.
 
-## 1. Inventory the current build
+## 1. Check upstream, then inventory the current build
+
+**First, check upstream for prior work** ([`../GUARDRAILS.md`](../GUARDRAILS.md) →
+*Prior work*): someone may already have a scikit-build-core / CMake branch, PR, or
+a discussion about why it stalled. Find the upstream repo (`git remote -v`,
+`[project.urls]`) and search its issues + PRs (open/merged/closed) for
+`scikit-build`, `cmake`, `pyproject`, `meson`. Report what you find before porting.
+
+Then inventory the current build:
 
 ```bash
 ls setup.py setup.cfg pyproject.toml MANIFEST.in CMakeLists.txt 2>/dev/null

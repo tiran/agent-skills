@@ -9,7 +9,7 @@ others well too.
 
 | Repo | Backend | Worth studying for |
 | --- | --- | --- |
-| [`tiran/pycxxfilt`](https://github.com/tiran/pycxxfilt) | meson-python | Compiled C++ extension via Meson, VCS versioning (`vcs-versioning`), full CI + `scorecard` + `codeql`. Template for `port-to-meson-python`. |
+| [`tiran/pycxxfilt`](https://github.com/tiran/pycxxfilt) | meson-python | Compiled C++ extension via Meson, VCS versioning (`vcs-versioning`), full CI + `scorecard` + `codeql`. Template for `port-to-meson-python`. Also a cross-ABI C++ symbol de-mangler (Itanium + MSVC + Rust) — used in the `port-to-torch-stable-abi` symbol audit. |
 | [`tiran/zipwire`](https://github.com/tiran/zipwire) | hatchling + hatch-vcs | Pure-Python packaging, tag-triggered `release.yml` with Trusted Publisher. Template for `secure-python-release-pipeline`. |
 | [`tiran/retread`](https://github.com/tiran/retread) | hatchling + hatch-vcs | Same secure-release shape as zipwire; a second worked example. |
 | [`tiran/kvcached`](https://github.com/tiran/kvcached) (fork) | setuptools + C++/CUDA | My stable-ABI port work on kvcached, upstream at [`ovg-project/kvcached`](https://github.com/ovg-project/kvcached). Basis for `port-to-torch-stable-abi`. |
