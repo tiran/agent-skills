@@ -59,7 +59,12 @@ relevant tools (and their floors in `[build-system].requires`):
   (older twine rejects Metadata-Version 2.4).
 - **`[dependency-groups]`** (PEP 735) → a resolver that supports it (pip ≥ 25.1,
   or uv) — it's not build metadata, so the backend version doesn't matter, but old
-  pip won't understand `--group`.
+  pip won't understand `--group`. If a **Hatch environment** must consume a group
+  (via the `dependency-groups` env key), require **Hatch ≥ 1.16.3** and bump that
+  floor wherever Hatch is pinned (e.g. a `[tool.hatch]`/CI constraint or a `hatch`
+  entry in a dev group); older Hatch has no way to read a group and its `features`
+  key sees extras only (step 8). This is the **Hatch** env-runner version, not
+  hatchling the backend.
 
 When in doubt, check each tool's changelog and set conservative floors. Rule of
 thumb: use current setuptools/hatchling, `build`, and twine. The rest of this
@@ -239,7 +244,19 @@ docs = ["sphinx>=7"]
 dev  = [{ include-group = "test" }, { include-group = "docs" }, "ruff"]
 ```
 
-More (including `include-group`): `reference/dependencies.md`.
+> **Exception — the consumer must support groups.** Only move a dev set to
+> `[dependency-groups]` if whatever *installs* it understands PEP 735. The common
+> trap is **Hatch environments**: `[tool.hatch.envs.<name>].features = ["test"]`
+> reads `[project.optional-dependencies]` (extras) **only** — it cannot consume a
+> `[dependency-groups]` group, so blindly relocating a `test`/`docs` set there
+> silently breaks the env wiring. Either keep those dev sets as extras, or rewire
+> the env to the separate `dependency-groups` key and **require Hatch ≥ 1.16.3**
+> (the key landed in 1.16.0 but 1.16.3 fixes it for non-builder envs) — pin that
+> floor wherever Hatch is constrained. Same caution for any other consumer (tox,
+> nox, CI) that references extras rather than `--group`. Check *how the sets are
+> consumed* before moving them.
+
+More (including `include-group` and the Hatch caveat): `reference/dependencies.md`.
 
 ## 9. The `[build-system]` table
 
@@ -331,6 +348,7 @@ guides recommend — mention them, but they're separate tasks:
 duplicated in `setup.py`/`setup.cfg`); `validate-pyproject` and `twine check`
 pass; README, SPDX license, authors, keywords, classifiers, and well-known URLs
 are populated; dependencies use floors without speculative caps; dev tooling is in
-`[dependency-groups]`; the build backend is declared in `[build-system]` (keeping
+`[dependency-groups]` (or stays in extras where a consumer like Hatch `features`
+requires it — step 8); the build backend is declared in `[build-system]` (keeping
 setuptools is fine); any remaining `setup.py`/`setup.cfg` holds only build logic,
 not metadata.

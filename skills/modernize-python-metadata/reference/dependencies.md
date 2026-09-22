@@ -89,6 +89,43 @@ dev  = [
 `include-group` lets `dev` pull in the others so `--group dev` installs
 everything, with each tool set still usable on its own.
 
+### Caveat: the consumer must support PEP 735
+
+`[dependency-groups]` only helps if whatever installs the set understands it
+(pip ≥ 25.1 `--group`, or uv). Some tools consume **extras** and cannot read a
+group, so relocating a dev set there breaks their wiring:
+
+- **Hatch environments** are the common trap. An env's `features` key reads
+  `[project.optional-dependencies]` (extras) **only** —
+  `[tool.hatch.envs.test].features = ["test"]` pulls the `test` *extra*, and there
+  is no way to point `features` at a `[dependency-groups]` group. Moving that set
+  from `optional-dependencies` to `dependency-groups` silently leaves the env with
+  nothing installed. Hatch added a *separate* env key for this in **1.16.0**
+  (2025-11-24); **1.16.3** fixes it for envs not marked as builders, so
+  **require Hatch ≥ 1.16.3**:
+
+  ```toml
+  [dependency-groups]
+  test = ["pytest>=7", "pytest-cov>=4"]
+
+  [tool.hatch.envs.test]
+  dependency-groups = ["test"]     # NOT features = ["test"]; needs Hatch >= 1.16.3
+  ```
+
+  So the move is possible, but it's a two-part change (relocate the set **and**
+  rewire every env from `features` to `dependency-groups`) plus pinning the
+  **Hatch ≥ 1.16.3** floor wherever Hatch is constrained (a CI install, a `hatch`
+  entry in a dev group, contributor docs) — not a free relocation. This is a
+  **Hatch** (project/env manager) version, not **hatchling** (the build backend):
+  groups aren't build metadata, so the backend's version is irrelevant — only the
+  env-runner's is.
+- **tox / nox / CI steps** that install `.[test]` (an extra) rather than
+  `--group test` have the same problem.
+
+Before moving a dev set out of `optional-dependencies`, grep for how it's
+consumed (`features`, `.[...]`, `extras`) and migrate the consumer in the same
+change — or leave it as an extra.
+
 ## `[build-system].requires` — build-time deps
 
 ```toml
