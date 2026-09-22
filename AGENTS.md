@@ -45,7 +45,8 @@ skills need a closer human review of their results.
   changelog. Keep it terse; omit the body for trivial changes.
   **Optimize for human readability:** write the body for a reviewer skimming
   `git log` — focus on the important change, cut restated detail and boilerplate,
-  and prefer a short message over an exhaustive one.
+  and prefer a short message over an exhaustive one. Bullet points are fine, and
+  preferred over a run-on paragraph, when the change has several distinct parts.
 - **PR title and description mirror the commit** — reuse the commit subject as the
   PR title and the commit body as the description. Don't pad the PR with boilerplate
   the commit doesn't have (no invented "Testing" / "Changes" sections).

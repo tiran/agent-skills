@@ -114,6 +114,11 @@ from there instead. Either way, use it for a first-pass inventory —
 `--mode=audit` (read-only) and `--mode=plan` (dependency-aware file grouping)
 give a richer, AST-level classification than the greps above.
 
+The rewriter operates on `.cpp` TUs; CUDA `.cu` device code (kernels, launch
+wrappers, atomics, dispatch macros, the `data_ptr` const-split) still needs
+hand-porting. On a CPU-only box those `.cu` files are neither compiled nor
+symbol-audited (step 16) — port them by hand and flag them for a GPU reviewer.
+
 ## 2. Choose the Torch floor (`TORCH_TARGET_VERSION`)
 
 Pick the **lowest** Torch version that has every stable API you call — it becomes
@@ -267,6 +272,11 @@ still includes them, lift the guard around **only** those includes:
 #pragma pop_macro("TORCH_STABLE_ONLY")
 ```
 
+Apply this to **every** TU compiled with the stable defines that transitively
+includes pybind — not just the `PYBIND11_MODULE` one. An implementation `.cpp` that
+only pulls pybind in through a header (e.g. a `cocoeval.cpp` with no torch calls of
+its own) still trips the guard and still needs the dance.
+
 Also: `<torch/version.h>` `#error`s when `TORCH_TARGET_VERSION` is defined, so you
 **cannot read `TORCH_VERSION_MAJOR/MINOR`** in a stable TU. Treat "target defined"
 as "≥ floor"; include `version.h` only when it is *not* defined.
@@ -317,6 +327,14 @@ STABLE_TORCH_LIBRARY_IMPL(myns, CUDA, m) {   // CPU / CUDA / MPS / CompositeExpl
   `t.is_cuda()`, or register separate `CPU`/`CUDA` impls.
 - Dispatcher ops run **GIL-free**; drop any `py::gil_scoped_release`. Scalars cross
   as `int64_t`/`double`.
+- **Match schema widths at the boxed boundary** — a helper's params *and* return
+  must be the canonical types (`int`→`int64_t`, `float`→`double`). A plain `int`
+  return against `-> int` can hit an ambiguous `from(int)` overload and fail to
+  box; widen to `int64_t`.
+- **One unique alias symbol per mutated tensor** (`Tensor(a!)`, `(b!)`, …). An op
+  may mutate several out/scratch args and still return `int`/`()`. Over-declaring
+  an input as mutated is safe; *under*-declaring silently breaks functionalization
+  / `torch.compile`.
 
 ## 12. Move to Python what the ABI can't express
 
@@ -336,7 +354,7 @@ If the inventory found `py::class_`/`torch::class_`, pick one:
    its pointer through a 1-element int64 CPU tensor via
    `torch::stable::from_blob(ptr, {1}, {1}, cpu, kLong, deleter)`; the deleter
    owns it. All-stable, `torch.compile`-safe.
-2. **Small pybind island** in the *same* `.so` (kvcached keeps `PageAllocator`).
+2. **Small pybind11 section** in the *same* `.so` (kvcached keeps `PageAllocator`).
    Only tensor ops go stable; pass an int64 handle across. Needs the step-4
    workaround; **caps abi3** (step 17).
 3. **nanobind** — keeps pybind-style classes and is abi3-capable; higher Python
@@ -357,11 +375,18 @@ Choose based on whether you also want abi3 (step 17):
   Py_MOD_GIL_NOT_USED` under `#ifdef Py_GIL_DISABLED`), and
   `PyMODINIT_FUNC PyInit__C() { return PyModuleDef_Init(&def); }`.
 
+Either way, no TU built with the stable defines — including the pybind11 section —
+may include `<torch/extension.h>`; it drags in unstable ATen and trips
+`TORCH_STABLE_ONLY`. Include
+`<torch/csrc/stable/library.h>` plus the narrow pybind headers instead.
+`PYBIND11_MODULE(TORCH_EXTENSION_NAME, m)` still works: `TORCH_EXTENSION_NAME` is a
+`-D` flag setuptools injects, not something `torch/extension.h` provides.
+
 ## 15. Python-side wiring
 
 - Importing the extension registers the ops; expose them as `torch.ops.<ns>.<op>`
   (optionally alias old names to keep call sites working).
-- If you kept a pybind island (step 13), re-export those symbols too.
+- If you kept a pybind11 section (step 13), re-export those symbols too.
 
 ## 16. Verify
 
@@ -395,7 +420,7 @@ the Torch stable ABI collapses the *Torch-version* axis; abi3 collapses the
 *Python-version* axis (one `cpXY-abi3` wheel for all Python ≥ X.Y).
 
 1. **Is pybind still present?** (`grep -rn 'pybind11\|py::class_' csrc/`). pybind11
-   is incompatible with `Py_LIMITED_API`. A pybind island (step 13 option 2)
+   is incompatible with `Py_LIMITED_API`. A pybind11 section (step 13 option 2)
    **blocks** abi3 until removed / converted to nanobind / hand-written via
    `PyType_FromSpec`.
 2. **Exported C++ classes** not yet on the handle pattern → the main blocker.

@@ -217,7 +217,7 @@ found exported classes, you have three options, in rough order of preference:
 - **Opaque handle-in-a-tensor** — heap-allocate the object, hide its pointer
   inside a 1-element tensor with a deleter, and expose methods as ops that take
   the handle. All-stable (torchcodec does this for its decoders).
-- **Keep a small pybind11 island** in the same `.so` for just the classes, with
+- **Keep a small pybind11 section** in the same `.so` for just the classes, with
   the tensor ops on the stable path (kvcached keeps `PageAllocator` this way). Note
   this *caps* your Python-abi3 options later.
 - **nanobind** — a pybind11-like library that *is* abi3-capable, at the cost of a
@@ -248,7 +248,7 @@ serves regular *and* free-threaded Python ≥3.15 from a single wheel, once Torc
 build tooling targets it. (An `abi3t`-*only* tag would be free-threaded-only.)
 
 The blocker, if there is one, is almost always pybind `py::class_` — it is
-fundamentally incompatible with the Limited API. If you kept a pybind island for
+fundamentally incompatible with the Limited API. If you kept a pybind11 section for
 classes, abi3 waits until those move to the handle pattern or nanobind.
 
 ## Common pitfalls
