@@ -1,0 +1,22 @@
+{
+  "name": "tiran-skills",
+  "description": "Portable, agent-neutral coding skills and playbooks (Python packaging, PyTorch).",
+  "author": {
+    "name": "Christian Heimes"
+  },
+  "homepage": "https://github.com/tiran/agent-skills",
+  "repository": "https://github.com/tiran/agent-skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "skills",
+    "python",
+    "packaging",
+    "pyproject",
+    "build-backend",
+    "wheels",
+    "cibuildwheel",
+    "pytorch",
+    "stable-abi",
+    "abi3"
+  ]
+}

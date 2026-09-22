@@ -1,0 +1,5 @@
+# Lints the repo's helper scripts (tools/ and skills/*/scripts/). No package here.
+target-version = "py311"
+
+[lint]
+extend-select = ["I", "UP", "B"] # import sorting, pyupgrade, bugbear on top of defaults

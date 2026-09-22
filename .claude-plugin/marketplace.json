@@ -1,0 +1,15 @@
+{
+  "name": "tiran",
+  "owner": {
+    "name": "Christian Heimes",
+    "url": "https://github.com/tiran"
+  },
+  "description": "Portable, agent-neutral coding skills and playbooks (Python packaging, PyTorch).",
+  "plugins": [
+    {
+      "name": "tiran-skills",
+      "source": "./",
+      "description": "Reusable coding skills for Python packaging: build backends, pyproject metadata, wheels/CI, and PyTorch stable-ABI ports."
+    }
+  ]
+}

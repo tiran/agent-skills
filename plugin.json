@@ -1,0 +1,5 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "tiran-skills",
+  "description": "Portable, agent-neutral coding skills and playbooks (Python packaging, PyTorch), auto-discovered under skills/."
+}
