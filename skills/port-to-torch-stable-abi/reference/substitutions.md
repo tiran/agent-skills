@@ -72,6 +72,11 @@ For Torch ≥ 2.13 you may instead use
 you support both. **Wrap this in one helper header** (`get_current_cuda_stream()`,
 `get_device_prop()`) — every surveyed project does.
 
+**Atomics:** `#include <ATen/cuda/Atomic.cuh>` + `atomicAdd(ptr, v)` →
+`#include <torch/headeronly/cuda/Atomic.h>` + `gpuAtomicAdd(ptr, v)`. ATen's
+`Atomic.cuh` `#error`s under `TORCH_STABLE_ONLY`; the headeronly one is stable-safe
+and covers `Half`/`BFloat16`.
+
 ## 10. Dispatch macros
 
 ATen dispatch macros pull in unstable headers. Replace with:
@@ -79,5 +84,9 @@ ATen dispatch macros pull in unstable headers. Replace with:
 - `AT_DISPATCH_FLOATING_TYPES(...)` → `THO_DISPATCH_V2(scalar_type, name, lambda,
   AT_FLOATING_TYPES)` (`<torch/headeronly/core/Dispatch_v2.h>`), used by
   torchaudio/torchvision.
+- `_AND_HALF`/`_AND2` variants → append the extra `ScalarType`s and wrap the group
+  macro in `AT_EXPAND(...)`, e.g. `AT_DISPATCH_FLOATING_TYPES_AND_HALF` →
+  `THO_DISPATCH_V2(scalar_type, name, lambda, AT_EXPAND(AT_FLOATING_TYPES),
+  torch::headeronly::ScalarType::Half)`.
 - For custom sets, hand-write pure-C++ `if/else`/`switch` dispatch macros (vLLM's
   `VLLM_STABLE_DISPATCH_*` — no ATen dependency).
