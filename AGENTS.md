@@ -35,6 +35,17 @@ Status: **Stable** (broadly applied, verified), **Beta** (real cases, some rough
 edges — check its output), **Experimental** (early draft). Beta/experimental
 skills need a closer human review of their results.
 
+## Working in this repo
+
+- **Always work on a branch** — never commit to `main`. Branch first, commit
+  there, open a PR.
+- **Follow standard commit-message conventions:** an imperative subject line of
+  **≤50 characters** (capitalized, no trailing period), a blank line, then a body
+  wrapped at **72 columns** explaining the *why* / user impact — not a file-by-file
+  changelog. Keep it terse; omit the body for trivial changes.
+- **Always sign off commits** (`git commit -s`) — add the `Signed-off-by` line
+  (DCO).
+
 ## Authoring or editing a skill (conventions)
 
 - One skill per directory under `skills/<name>/`, with a single `SKILL.md` as the

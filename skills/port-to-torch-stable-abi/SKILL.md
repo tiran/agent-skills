@@ -40,14 +40,21 @@ two together are the payoff, not either alone.
 
 - LibTorch Stable ABI note — <https://docs.pytorch.org/docs/stable/notes/libtorch_stable_abi.html>
 - Custom C++ and CUDA Operators — <https://docs.pytorch.org/tutorials/advanced/cpp_custom_ops.html>
+- Shim symbol → Torch version map (the floor source of truth, steps 2 & 16) —
+  <https://github.com/pytorch/pytorch/blob/main/torch/csrc/stable/c/shim_function_versions.txt>
 
-**Tooling (recommended):** `pytorch-stable-abi-transform`
+**Tooling (recommended) — offer it in step 1, don't skip it.**
+`pytorch-stable-abi-transform`
 (<https://github.com/TorchedHat/pytorch-stable-abi-transform>) is a deterministic
 Clang AST rewriter that automates the mechanical parts of this port — the
 `audit`/`plan`/`rewrite` modes cover steps 1 and 5–10, and compile-based
 verification supports step 16. Prefer running it for the bulk edit and then
 handling only what it flags (`TensorOptions`, `PYBIND11_MODULE`, project dispatch
-macros), rather than rewriting every file by hand.
+macros), rather than rewriting every file by hand. It is a **build-from-source
+C++ tool** (LLVM/Clang dev libs), not a pip package, and it **ships its own
+Claude Code skill** (`migrate-stable-abi`) + `CLAUDE.md`. **Proactively tell the
+user it exists and offer to set it up at the start** (step 1) — do not silently
+hand-rewrite the whole extension when this tool would do the bulk deterministically.
 
 **Definition of done:** the extension builds with `-DTORCH_TARGET_VERSION` (and
 `-DTORCH_STABLE_ONLY`); a symbol audit finds zero `at::`/`c10::`/unstable
@@ -61,11 +68,22 @@ abi3 assessment (step 17).
 > heavy compile** (torch/CUDA are multi-GB); match the project's existing style and
 > keep comments/docstrings terse.
 
-## 1. Inventory and classify
+## 1. Check upstream, then inventory and classify
+
+**First, check upstream for prior work** ([`../GUARDRAILS.md`](../GUARDRAILS.md) →
+*Prior work*): a stable-ABI port is exactly the kind of change a maintainer may
+already have started. Find the upstream repo (`git remote -v`, `[project.urls]`;
+if this is a fork, `gh repo view --json parent`) and search its issues + PRs
+(open/merged/closed) for `stable ABI`, `torch::stable`, `STABLE_TORCH_LIBRARY`,
+`TORCH_TARGET_VERSION`, `abi3`. Report what you find before porting.
+
+Then inventory and classify:
 
 ```bash
 grep -rnE 'PYBIND11_MODULE|py::class_|torch::class_|TORCH_LIBRARY|nanobind' csrc/ src/
 grep -rnE '\bat::|\bc10::|TORCH_CHECK|AT_DISPATCH|data_ptr<|\.dtype\(\)|getCurrentCUDAStream|CUDAGuard' csrc/ src/
+grep -rnE 'torch\.version\.(cuda|hip)' --include=setup.py --include='*.py' \
+     --include=CMakeLists.txt --include='*.cmake' --include=meson.build .   # how the build selects CUDA/HIP/CPU
 find . -name '*.cu' | head ; ls setup.py pyproject.toml CMakeLists.txt 2>/dev/null
 ```
 
@@ -75,9 +93,26 @@ find . -name '*.cu' | head ; ls setup.py pyproject.toml CMakeLists.txt 2>/dev/nu
 - **Hard** — exports C++ **classes** (`py::class_`/`torch::class_`) or takes real
   Python objects. The stable ABI has **no class equivalent** — see step 13.
 
-On a larger project, `pytorch-stable-abi-transform --mode=audit` (read-only) and
-`--mode=plan` (dependency-aware file grouping) give a richer, AST-level inventory
-than the greps above.
+**Offer to set up `pytorch-stable-abi-transform` now** (the *Tooling* note above)
+— the deterministic rewriter that does the bulk of steps 5–10 and compile-verifies
+the result. Don't quietly skip it and hand-rewrite everything. It is a
+build-from-source C++ tool with LLVM/Clang deps, so **ask the user before setting
+it up** (per [`../GUARDRAILS.md`](../GUARDRAILS.md) → *Footprint*). Once they agree:
+
+```bash
+# LLVM/Clang dev libs + Ninja (tested with LLVM 19):
+#   Fedora: sudo dnf install clang-devel llvm-devel ninja-build
+#   Ubuntu: sudo apt install libclang-19-dev libclang-cpp19-dev llvm-19-dev ninja-build
+git clone https://github.com/TorchedHat/pytorch-stable-abi-transform
+cmake -GNinja -B build -S pytorch-stable-abi-transform && cmake --build build
+./build/stable-abi-transform --init-config > .stable-abi.yaml   # set pytorch_root / project_root
+```
+
+It also ships its **own Claude Code skill** (`migrate-stable-abi`) and a
+`CLAUDE.md`; if the user prefers, point their agent at those and drive the tool
+from there instead. Either way, use it for a first-pass inventory —
+`--mode=audit` (read-only) and `--mode=plan` (dependency-aware file grouping)
+give a richer, AST-level classification than the greps above.
 
 ## 2. Choose the Torch floor (`TORCH_TARGET_VERSION`)
 
@@ -94,6 +129,16 @@ the minimum Torch the wheel loads on. **Default 2.10** unless forced higher:
 † `STABLE_TORCH_LIBRARY` / `torch::stable::Tensor` first appeared in **2.9**, but
 2.10 is the first release with C-shim version *enforcement* — so **2.10 is the
 recommended floor** even though these APIs are technically available on 2.9.
+
+The table above is only the common cases. For **any** shim symbol, the
+authoritative "which Torch version added this" list is
+[`torch/csrc/stable/c/shim_function_versions.txt`](https://github.com/pytorch/pytorch/blob/main/torch/csrc/stable/c/shim_function_versions.txt)
+in the pytorch tree — one `function_name: TORCH_VERSION_MAJOR_MINOR_PATCH` per
+line (e.g. `torch_from_blob: TORCH_VERSION_2_11_0`); a symbol *not* listed there
+was available before 2.10. Grep it for every shim your code calls and take the
+**max** version as your floor. Check the copy that ships with your installed torch
+(`python -c 'import torch,os; print(os.path.join(os.path.dirname(torch.__file__), "csrc/stable/c/shim_function_versions.txt"))'`)
+so it matches the headers you build against, not just `main`.
 
 setuptools projects usually compute the hex (`0x0MMmm00000000000`):
 
@@ -131,13 +176,38 @@ extra_compile_args = {
 CMake equivalent: `target_compile_definitions(${tgt} PRIVATE TORCH_TARGET_VERSION=0x020a000000000000)` plus `-DUSE_CUDA`/`-DUSE_MPS` where shim streams are used.
 
 - `-DUSE_CUDA` exposes `aoti_torch_get_current_cuda_stream` in `shim.h` (guarded
-  by `#ifdef USE_CUDA` only). Add it wherever the shim is compiled — `.cpp` files
-  too, not just `.cu` (torchvision gotcha). ROCm keeps the `..._cuda_stream` name
-  (HIP masquerades as CUDA), so **define `-DUSE_CUDA` on ROCm as well**.
+  by `#ifdef USE_CUDA` only). **Only add it if the extension actually calls the
+  current-stream shim** — it is not a blanket "this is a GPU build" flag, and an
+  extension that never asks Torch for the current stream doesn't need it at all.
+  When you do need it, add it wherever the shim is compiled — `.cpp` files too,
+  not just `.cu` (torchvision gotcha). ROCm keeps the `..._cuda_stream` name (HIP
+  masquerades as CUDA), so on ROCm the *same* condition applies: define
+  `-DUSE_CUDA` **only for the stream shim**, alongside `-DUSE_ROCM=1` — not on
+  every HIP source file by default.
 - Keep the build-system torch pin in sync (`pyproject.toml` / `install_requires`
   → `torch >= <floor>`).
 - `-DTORCH_STABLE_ONLY` is strongly recommended (step 4) but optional; torchvision
   and amd-quark rely on discipline instead.
+
+**Do most of the port on CPU-only torch.** The stable ABI is device-agnostic, so
+the mechanical rewrites (steps 5–10), the CPU build, the symbol audit (step 16),
+and the cross-Torch-version load test all work against
+`uv pip install torch --index-url https://download.pytorch.org/whl/cpu` — a few
+hundred MB, no nvcc, no GPU. Only reach for the CUDA torch + nvcc wheels (below)
+when you build `.cu` device code or run GPU smoke tests. See
+[`../GUARDRAILS.md`](../GUARDRAILS.md) → *Footprint*.
+
+**Caveat — backend detection.** Many extensions pick their CUDA / HIP / CPU build
+path from `torch.version.cuda` and `torch.version.hip` (e.g.
+`if torch.version.hip: … elif torch.version.cuda: … else: CPU`). The check may live
+in `setup.py`, in `CMakeLists.txt` (an `execute_process(... import torch ...)`), or
+in `meson.build` (a `run_command(py, '-c', 'import torch; …')`) — check all three.
+On **CPU-only torch both are `None`**, so such a build silently takes the CPU path
+and skips the `.cu`/HIP sources entirely — useful for a fast CPU-path port, but it
+means the device code isn't compiled or audited. Build once against the matching
+CUDA (or ROCm) torch before you call the port done. Note also that a ROCm torch
+reports `torch.version.hip` set **and** `torch.version.cuda` `None`, which is why
+the HIP branch must key off `torch.version.hip`, not the absence of CUDA.
 
 **GPU device code (does *not* collapse with the ABI — one wheel per CUDA major +
 per GPU arch; rationale in `reference/background.md`):**
@@ -145,14 +215,26 @@ per GPU arch; rationale in `reference/background.md`):**
 - **CUDA version:** build against the **lowest minor** of a CUDA major (minor
   compat since CUDA 11); one wheel per major. Pin the build-torch's CUDA so
   `cudart` matches the user's Torch.
+- **Getting `nvcc` without a system toolkit:** the CUDA compiler and libraries are
+  on PyPI as venv-local wheels — `nvidia-cuda-nvcc-cu12` (nvcc),
+  `nvidia-cuda-runtime-cu12`, `nvidia-cuda-cccl-cu12` (thrust/cub headers),
+  `nvidia-cuda-nvrtc-cu12`, `nvidia-cublas-cu12`, … (and a `-cu11` line) — the same
+  components torch's CUDA wheels pull in. `uv pip install nvidia-cuda-nvcc-cu12`
+  drops nvcc under `site-packages/nvidia/cuda_nvcc/bin/` (no sudo, no system
+  install; see [`../GUARDRAILS.md`](../GUARDRAILS.md) → *Footprint*). Match the
+  CUDA major/minor to build-torch, point the build at it (`CUDACXX=…/nvidia/cuda_nvcc/bin/nvcc`
+  or `CUDA_HOME`), and remember these wheels omit profilers/debuggers and a host
+  C++ compiler.
 - **Arch / device code:** set `TORCH_CUDA_ARCH_LIST`, e.g. `"8.0 9.0 12.0+PTX"`.
   All archs pack into **one fatbinary** in the `.so`; `+PTX` on the top arch adds
   a driver-JIT fallback for newer GPUs. New GPU = add its `sm_XX` and rebuild.
 - **Driver-API-only** (e.g. `cuMem*`, `-lcuda`, no `.cu`): no device code, no
   `cudart`, no arch list — nearly CUDA-major-agnostic.
 - **ROCm / HIP:** pass `-DUSE_ROCM=1 -D__HIP_PLATFORM_AMD__=1` (auto with
-  `CUDAExtension`; add manually with `CppExtension`) — separate from the
-  `-DUSE_CUDA` that still gates the stream shim on ROCm. Link `amdhip64`; archs via
+  `CUDAExtension`; add manually with `CppExtension`) — this is the "build against
+  ROCm torch" switch. It is *separate* from `-DUSE_CUDA`, which on ROCm gates
+  **only** the current-stream shim (add it just for that, per step 3 above — not
+  to every HIP file). Link `amdhip64`; archs via
   `PYTORCH_ROCM_ARCH` (`gfx*`) → one bundled ("fat") code object. HIP-aware
   source: use `CppExtension` to skip Torch's hipify (it rewrites/breaks headers).
   hipify trap: it emits duplicate `_hip.h` for third-party headers on the include
@@ -207,6 +289,12 @@ checks/error macros (7), tensor methods → stable free functions (8), device/st
 - `kInt8` → `Char`, `kInt64` → `Long`; `t.dtype()` → `t.scalar_type()`.
 - If a method has no stable equivalent, use the dispatcher escape hatch in
   `reference/ports.md`.
+
+**Stay DRY** ([`../GUARDRAILS.md`](../GUARDRAILS.md) → *Style*): the same swap
+recurs across many TUs (the stream/device-guard helper, a boxed-op wrapper, a
+`const_data_ptr` accessor). Factor each into **one shared helper header** the
+`.cpp`/`.cu` files include — every surveyed port does (`reference/substitutions.md`
+§9) — rather than pasting the snippet into each file.
 
 ## 11. Op registration
 
@@ -280,8 +368,18 @@ Choose based on whether you also want abi3 (step 17):
 1. **Symbol audit** — the objective proof. Either `torch-abi-audit` on the built
    `.so` (labels it stable/unstable, counts stable-shim vs unstable symbols), or
    grep the `.so`: fail if any `_ZN2at`/`_ZN3c10`/`_ZN5torch` symbol (excluding
-   `6stable`/`10headeronly`) is defined, or if any shim newer than your floor
-   (`torch_from_blob` = 2.11, etc.) is imported.
+   `6stable`/`10headeronly`) is defined, or if any shim newer than your floor is
+   imported. To know each imported shim's minimum version, cross-reference
+   [`shim_function_versions.txt`](https://github.com/pytorch/pytorch/blob/main/torch/csrc/stable/c/shim_function_versions.txt)
+   (step 2) — anything above your `TORCH_TARGET_VERSION` (e.g. `torch_from_blob` =
+   2.11 on a 2.10 floor) means the wheel silently won't load on the floor.
+   The raw `_ZN2at`/… grep only matches **Itanium** mangling (Linux/macOS,
+   gcc/clang); a Windows `.pyd` uses **MSVC** mangling (`?…`) that it misses.
+   De-mangle first so one audit works everywhere: pipe `nm -D`/`dumpbin` output
+   through [`pycxxfilt`](https://github.com/tiran/pycxxfilt)
+   (`python -m pycxxfilt`, or `pycxxfilt.demangle()`), which auto-detects Itanium
+   vs MSVC (vs Rust), then fail on any readable `at::` / `c10::` / non-stable
+   `torch::` namespace. `c++filt` works too but is Itanium-only.
 2. **Build on the floor Torch and a newer Torch**; `import`; run a create/op smoke
    test on each. This is the single-wheel claim — it can't be checked by inspection.
 3. Run the existing test suite and any pre-commit gates.

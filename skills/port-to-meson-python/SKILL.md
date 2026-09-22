@@ -66,7 +66,15 @@ PEP 517/621 shape either way.
 > heavy compile** (torch/CUDA are multi-GB); match the project's existing style and
 > keep comments/docstrings terse.
 
-## 1. Assess and pick the track
+## 1. Check upstream, then assess and pick the track
+
+**First, check upstream for prior work** ([`../GUARDRAILS.md`](../GUARDRAILS.md) →
+*Prior work*): someone may already have a meson-python branch, PR, or a discussion
+about why it stalled. Find the upstream repo (`git remote -v`, `[project.urls]`)
+and search its issues + PRs (open/merged/closed) for `meson`, `meson-python`,
+`pyproject`, `scikit-build`. Report what you find before porting.
+
+Then inventory locally:
 
 ```bash
 ls setup.py setup.cfg pyproject.toml MANIFEST.in meson.build 2>/dev/null

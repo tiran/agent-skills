@@ -58,7 +58,15 @@ Rationale and numbers: `reference/example.md` and
 > heavy compile** (torch/CUDA are multi-GB); match the project's existing style and
 > keep comments/docstrings terse.
 
-## 1. Assess: is nanobind a fit, and how big is the port?
+## 1. Assess: check upstream, is nanobind a fit, and how big is the port?
+
+**First, check upstream for prior work** ([`../GUARDRAILS.md`](../GUARDRAILS.md) →
+*Prior work*): someone may already have a nanobind branch, PR, or a discussion
+about why it stalled. Find the upstream repo (`git remote -v`, `[project.urls]`)
+and search its issues + PRs (open/merged/closed) for `nanobind`, `abi3`,
+`pybind11`. Report what you find before porting.
+
+Then size the port locally:
 
 ```bash
 grep -rnE 'pybind11|PYBIND11_|py::' --include=*.cpp --include=*.h --include=*.hpp .
