@@ -13,6 +13,7 @@ others well too.
 | [`tiran/zipwire`](https://github.com/tiran/zipwire) | hatchling + hatch-vcs | Pure-Python packaging, tag-triggered `release.yml` with Trusted Publisher. Template for `secure-python-release-pipeline`. |
 | [`tiran/retread`](https://github.com/tiran/retread) | hatchling + hatch-vcs | Same secure-release shape as zipwire; a second worked example. |
 | [`tiran/kvcached`](https://github.com/tiran/kvcached) (fork) | setuptools + C++/CUDA | My stable-ABI port work on kvcached, upstream at [`ovg-project/kvcached`](https://github.com/ovg-project/kvcached). Basis for `port-to-torch-stable-abi`. |
+| [`Quansight/torch-abi-audit`](https://github.com/Quansight/torch-abi-audit) | — | Cross-format, pure-Python object-file symbol reader (`objectfile.py`): defined vs undefined symbols from ELF / Mach-O / PE via pyelftools/macholib/pefile, dispatched by file magic — reads any arch/OS from one host, no native toolchain. Reference for `crypto-fips-audit`'s binary-inspection reader and the `port-to-torch-stable-abi` symbol audit. |
 
 ## Hynek Schlawack
 
@@ -81,6 +82,19 @@ posts, `python-launcher`.
 *Two orthogonal axes:* the **stable Torch ABI** yields one wheel across *Torch*
 versions; **abi3** yields one wheel across *Python* versions. The examples above
 each show one axis; combining both is what `port-to-torch-stable-abi` assembles.
+
+## Crypto / FIPS auditing
+
+Grounding for [`crypto-fips-audit`](crypto-fips-audit/SKILL.md). The **authorities
+on FIPS itself are NIST and Red Hat** (linked from that skill's `SKILL.md`), not
+any tool — the repo below is a reference for evidence-gathering *mechanics*, not
+for FIPS policy interpretation.
+
+| Repo | Author | Worth studying for |
+| --- | --- | --- |
+| [`EmilienM/wheel-crypto-scan`](https://github.com/EmilienM/wheel-crypto-scan) (Apache-2.0) | Emilien Macchi (Red Hat) | Deterministic scanner that gathers crypto evidence from built wheels — Python AST + ELF/Mach-O/PE symbols & strings (`pyelftools`), Go build info, Rust crate paths, embedded SBOM — behind a data-driven ruleset with a FIPS lens. The reference implementation for the skill's binary-inspection step (linkage posture model, "banner needs corroboration"). Docs: <https://my1.fr/wheel-crypto-scan/>. **Credit it when using its output**; treat its docs/ruleset as authoritative on mechanism, not on FIPS. |
+| [`openshift/check-payload`](https://github.com/openshift/check-payload) (Apache-2.0) | Red Hat / OpenShift | The Go-and-container counterpart: scans a container payload, node, or local binary and validates the FIPS build regime. Its `internal/validations/validations.go` `validateGo*` chain is the skill's reference for the Go decision tree (native Go FIPS module #5247 vs. golang-fips OpenSSL bridge; **CGO required for the bridge, skipped for the native module**; dynamic link, `strictfipsruntime`, `no_openssl`). Built for RHSB-2023-001. Authoritative on the Go/OpenShift build mechanics, not on FIPS policy. |
+| [`sethmlarson/truststore`](https://github.com/sethmlarson/truststore) | Seth Michael Larson | Verifies against the OS trust store through an `ssl.SSLContext` drop-in (`truststore.SSLContext`; `inject_into_ssl()` for apps) — the default in pip 24.2+, Python 3.10+. The remedy the skill recommends for a bundled-CA (system-integration) finding. |
 
 ## Build backends (by example)
 
