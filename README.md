@@ -22,15 +22,15 @@ projects they draw on are listed in
 
 | Skill | Status | What it does |
 | --- | --- | --- |
-| [`port-to-torch-stable-abi`](skills/port-to-torch-stable-abi/) | Beta | Port a compiled PyTorch C++/CUDA/ROCm extension to the **stable ABI** (one wheel across Torch versions), then assess Python **abi3**. |
-| [`port-to-scikit-build-core`](skills/port-to-scikit-build-core/) | Exp | Migrate a package's build from bespoke `setup.py` to **scikit-build-core + CMake** ([PEP 517](https://peps.python.org/pep-0517/)/[621](https://peps.python.org/pep-0621/), standards-based wheels, editable installs). |
-| [`pybind11-to-nanobind`](skills/pybind11-to-nanobind/) | Exp | Port a C++ extension's bindings from **pybind11 to nanobind** — smaller/faster bindings and one **abi3** wheel across Python versions. |
-| [`port-to-meson-python`](skills/port-to-meson-python/) | Exp | Build a package with the **meson-python + Meson** backend, or port one off `setup.py` ([PEP 517](https://peps.python.org/pep-0517/)/[621](https://peps.python.org/pep-0621/), VCS versioning, abi3 wheels). |
-| [`secure-python-release-pipeline`](skills/secure-python-release-pipeline/) | Exp | A secure **GitHub Actions** build/release pipeline — sdist + wheels (cibuildwheel), **Trusted Publisher** to PyPI, minimal permissions, zizmor. |
-| [`modernize-python-metadata`](skills/modernize-python-metadata/) | Exp | Improve packaging **metadata** and move it into a PEP 621 `[project]` table — readme, **SPDX license**, classifiers, well-known URLs, dependency groups, no version caps. |
 | [`choose-python-build-backend`](skills/choose-python-build-backend/) | Exp | Recommend the right **build backend** (uv-build, flit, hatchling, meson-python, scikit-build-core, maturin, setuptools) by purelib/platlib, static/dynamic metadata, and language — with migration context. |
+| [`port-to-scikit-build-core`](skills/port-to-scikit-build-core/) | Exp | Migrate a package's build from bespoke `setup.py` to **scikit-build-core + CMake** ([PEP 517](https://peps.python.org/pep-0517/)/[621](https://peps.python.org/pep-0621/), standards-based wheels, editable installs). |
+| [`port-to-meson-python`](skills/port-to-meson-python/) | Exp | Build a package with the **meson-python + Meson** backend, or port one off `setup.py` ([PEP 517](https://peps.python.org/pep-0517/)/[621](https://peps.python.org/pep-0621/), VCS versioning, abi3 wheels). |
+| [`modernize-python-metadata`](skills/modernize-python-metadata/) | Exp | Improve packaging **metadata** and move it into a PEP 621 `[project]` table — readme, **SPDX license**, classifiers, well-known URLs, dependency groups, no version caps. |
 | [`port-to-python-limited-api`](skills/port-to-python-limited-api/) | Exp | Port a hand-written C/C++ extension to the **Limited API / stable ABI** — one **abi3** wheel across Python versions instead of one per version; optionally target 3.15 **abi3t** for free-threaded builds. |
 | [`port-to-free-threaded-python`](skills/port-to-free-threaded-python/) | Exp | Make a package work on the **free-threaded (no-GIL)** CPython build ([PEP 703](https://peps.python.org/pep-0703/)) and **declare support** so import doesn't re-enable the GIL — thread-safety pass, `Py_mod_gil`, `cp3Xt` wheels, TSan. Fixes simple races, reports the rest. |
+| [`pybind11-to-nanobind`](skills/pybind11-to-nanobind/) | Exp | Port a C++ extension's bindings from **pybind11 to nanobind** — smaller/faster bindings and one **abi3** wheel across Python versions. |
+| [`port-to-torch-stable-abi`](skills/port-to-torch-stable-abi/) | Beta | Port a compiled PyTorch C++/CUDA/ROCm extension to the **stable ABI** (one wheel across Torch versions), then assess Python **abi3**. |
+| [`secure-python-release-pipeline`](skills/secure-python-release-pipeline/) | Exp | A secure **GitHub Actions** build/release pipeline — sdist + wheels (cibuildwheel), **Trusted Publisher** to PyPI, minimal permissions, zizmor. |
 | [`crypto-fips-audit`](skills/crypto-fips-audit/) | Exp | Audit a Python package — and any **C/C++/Go/Rust** it ships — for its cryptography: inventory usage, find **insecure/weak crypto**, and assess **FIPS 140-3** compliance. Source-first, confirmed against the built artifact. Gathers evidence; does not certify. |
 
 **Status** reflects how battle-tested a skill is:
