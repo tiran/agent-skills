@@ -75,6 +75,12 @@ attempted — don't reinvent a branch someone already wrote.
   and docstrings — read the surrounding code first.
 - Keep comments and docstrings **terse and to the point**. Explain *why*, not
   *what*; don't restate what the code already makes obvious.
+- **Never add unnecessary comments.** No comment that restates the line it sits
+  on, narrates the edit ("added for migration", "changed default"), or leaves
+  TODO/placeholder chatter. This applies to generated config too — a
+  `pyproject.toml`, `CMakeLists.txt`, or `meson.build` should read as a clean
+  hand-written file, not an annotated diff. Add a comment only when it records a
+  non-obvious *why* the reader would otherwise miss.
 - **Stay DRY.** When a port repeats the same edit across many files — a swap
   wrapper, a stream/device helper, a check/dispatch macro — factor it into **one
   shared definition** instead of copy-pasting. For C/C++, put common helpers in a

@@ -267,9 +267,30 @@ setuptools project, just declare it (no need to switch to hatchling et al.):
 
 ```toml
 [build-system]
-requires = ["setuptools>=61"]     # ≥61 reads [project]; keep setuptools if that's what you use
-build-backend = "setuptools.build_meta"
+requires = ["setuptools>=61"]     # ≥61 reads [project]
+build-backend = "setuptools.build_meta:__legacy__"
 ```
+
+> **Which setuptools backend — `:__legacy__` vs plain.** `:__legacy__` is what you
+> get by default whenever you don't name a backend, in two distinct cases:
+> - **No `[build-system]` table at all** — tools assume both
+>   `requires = ["setuptools", "wheel"]` *and*
+>   `build-backend = "setuptools.build_meta:__legacy__"`.
+> - **`[build-system]` present with `requires` but no `build-backend`** — the backend
+>   still falls back to `:__legacy__`, but your `requires` is **honored as written**
+>   (the "requires is ignored, assume setuptools+wheel" rule fires *only* when the
+>   whole section is absent). So a legacy setup.py-only project can keep just
+>   `requires = ["setuptools>=…"]` and rely on the implicit default.
+>
+> Either way you land on `setuptools.build_meta:__legacy__` — the shim setuptools
+> ships for projects that predate PEP 517, where a `setup.py` routinely imports
+> helpers sitting next to it. It puts the project root on `sys.path` so such a
+> `setup.py` (importing a version helper, a `_build.py`) keeps working. Plain
+> `setuptools.build_meta` is **stricter** and does
+> **not** add the root to `sys.path`, so silently switching to it during a migration
+> can break a build that used to work. **Default to `:__legacy__` while a `setup.py`
+> remains**; move to plain `setuptools.build_meta` once `setup.py` is gone or has no
+> local imports. See `choose-python-build-backend/reference/backends.md`.
 
 ```toml
 # other backends look the same, e.g.:
