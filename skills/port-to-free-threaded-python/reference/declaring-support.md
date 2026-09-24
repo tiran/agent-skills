@@ -66,7 +66,7 @@ to run without the GIL; it merely confirms that you have checked the logic."
 | **PyO3 (Rust)** | **0.28+:** free-threaded by default; write `#[pymodule(gil_used = true)]` only to *opt out*. **0.23–0.27:** must write `#[pymodule(gil_used = false)]` (or `PyModuleMethods::gil_used(false)`) | 0.23+ | Maps to `PyUnstable_Module_SetGIL`; no-op under abi3 and the GIL build. |
 
 **PyO3 caveat:** the 0.26 release renamed `Python::with_gil`→`attach`,
-`allow_threads`→`detach`, `GILOnceCell`→`PyOnceLock`, and **removed `GILProtected`**.
+`allow_threads`→`detach`, `GILOnceCell`→`PyOnceLock`, and **deprecated `GILProtected`**.
 Examples using the old names predate 0.26. See [`thread-safety.md`](thread-safety.md)
 for the replacement sync primitives.
 

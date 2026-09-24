@@ -258,7 +258,7 @@ manually or the extension crashes on import.
 Rust's type system prevents many races, but `Sync` static data still needs protection
 without the GIL. Since 0.26 the sync toolbox lives in `pyo3::sync`:
 
-- **`GILProtected` was removed** → use `std::sync::Mutex`/atomics for pure-Rust state,
+- **`GILProtected` was deprecated in 0.26** → use `std::sync::Mutex`/atomics for pure-Rust state,
   or `pyo3::sync::PyMutex<T>` (wraps CPython's `PyMutex`, releases the runtime while
   blocked). `GILOnceCell` → **`PyOnceLock<T>`** for one-time init.
 - When you hold a lock **across arbitrary Python calls**, use `MutexExt::lock_py_attached`

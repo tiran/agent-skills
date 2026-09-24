@@ -163,7 +163,9 @@ reference for it:
   CGO, static linking, or tags. Verify with `go version -m` (look for a `GOFIPS140`
   setting and a `fips140=` in `DefaultGODEBUG`).
 - **Legacy golang-fips OpenSSL bridge** — cgo → dlopen's system OpenSSL. Applies to
-  **Go ≤ 1.25** (native FIPS "doesn't exist") and **Go 1.26 without fips140
+  **Go ≤ 1.25** (the native module ships from Go 1.24 as v1.0.0, but check-payload
+  doesn't apply the native rules there — it treats these under the bridge regime)
+  and **Go 1.26 without fips140
   activated**. Here check-payload **does** enforce, and so should you:
   **`CGO_ENABLED=1`** (never `0`), **dynamically linked** (no `-extldflags
   "-static"`), the **`no_openssl` tag must NOT be set**, and a `strictfipsruntime`
