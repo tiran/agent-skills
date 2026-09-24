@@ -156,7 +156,8 @@ and a table in `reference/backends.md`:
   **both** GIL-enabled and free-threaded CPython ≥3.15, so a single wheel with the
   combined **`abi3.abi3t`** tag (scikit-build-core 1.0
   `wheel.py-api = "cp315.cp315t"`, maturin, and meson-python) covers regular *and*
-  free-threaded Python from 3.15 — one stable-ABI wheel for everything.
+  free-threaded Python from 3.15 — one stable-ABI wheel for everything. Full
+  model: [`port-to-python-limited-api`](../port-to-python-limited-api/).
 - **Fast parallel / incremental builds.** **scikit-build-core (CMake + Ninja)**
   and **meson-python (Meson + Ninja)** are parallel and incremental by default —
   the reason NumPy/SciPy left setuptools. **setuptools has no isolation for

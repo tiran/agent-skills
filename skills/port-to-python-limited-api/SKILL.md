@@ -209,7 +209,9 @@ Convert single-phase `PyInit_<name>` (`PyModule_Create`) to **multi-phase**: a
 `PyModuleDef` with a `PyModuleDef_Slot[]` (`Py_mod_exec` does the setup; `Py_mod_gil =
 Py_MOD_GIL_NOT_USED` under `#ifdef Py_GIL_DISABLED`) and a `PyInit_` that just returns
 `PyModuleDef_Init(&def)`. Prerequisite for `abi3t`, good practice regardless.
-Before/after: `reference/module-init.md`.
+Before/after: `reference/module-init.md`. Note `Py_mod_gil` is only the *marker* —
+making the extension genuinely thread-safe for the free-threaded build is the
+separate [`port-to-free-threaded-python`](../port-to-free-threaded-python/) skill.
 
 ## 7. (abi3t only) Port to PyModExport for Python 3.15
 
