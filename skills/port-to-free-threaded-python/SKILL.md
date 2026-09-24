@@ -104,26 +104,19 @@ piece of state reachable from more than one thread and classify each finding, th
 within the scope boundary below. Detection heuristics and the fix patterns are in
 [`reference/thread-safety.md`](reference/thread-safety.md).
 
-**Safe to fix in place** (local, self-contained changes):
+**Safe to fix in place** (local, self-contained; patterns and caveats in the reference):
 
-- **Borrowed-reference hazards.** A borrowed reference can be freed by another thread
-  mid-use — even `Py_NewRef(PyList_GetItem(l, 0))` races. Replace container getters
-  with the strong-reference forms `PyList_GetItemRef`, `PyDict_GetItemRef`,
-  `PyWeakref_GetRef` (backport via `pythoncapi-compat`). Arguments and new references
-  stay safe; don't blanket-convert. `PyList_SET_ITEM`/`PyTuple_SET_ITEM` are only for
-  newly created, unshared values.
-- **A single atomic counter or flag** → C11 `<stdatomic.h>` (C++/Rust std), with the
-  weakest correct memory order (relaxed for a tally; acquire/release to publish data),
-  ideally `#ifdef Py_GIL_DISABLED`-guarded so the GIL build stays cheap. Anything wider
-  than one word — a CAS retry loop or a hand-rolled lock-free structure — is a report,
-  not a fix (see below).
-- **A self-contained read-modify-write on one object you own** → wrap it in
-  `Py_BEGIN_CRITICAL_SECTION(op)` / `Py_END_CRITICAL_SECTION()`, or a `static PyMutex`.
-  Two rules: **never nest** critical sections to lock two objects (use
-  `Py_BEGIN_CRITICAL_SECTION2`), and remember a critical section **can be suspended
-  across blocking calls**, so invariants don't survive one.
-- Consider adding a **borrowed-ref CI linter** (numpy's `check_c_api_usage.py` template)
-  so the fixes above can't silently regress.
+- **Borrowed-reference hazards** → strong-ref getters (`PyList_GetItemRef`,
+  `PyDict_GetItemRef`, `PyWeakref_GetRef`; backport via `pythoncapi-compat`). Don't
+  blanket-convert — arguments and new references stay safe.
+- **A single atomic counter or flag** → C11 `<stdatomic.h>` (C++/Rust std) with the
+  weakest correct memory order, `#ifdef Py_GIL_DISABLED`-guarded. Anything wider than
+  one word — a CAS loop or a hand-rolled lock-free structure — is a report, not a fix.
+- **A self-contained read-modify-write on one object you own** → a critical section
+  (`Py_BEGIN_CRITICAL_SECTION`) or a `static PyMutex`. Mind the two rules: never nest to
+  lock two objects (use the `_2` form); a section is suspended across blocking calls.
+- Optionally add a **borrowed-ref CI linter** (numpy's `check_c_api_usage.py`) so these
+  fixes can't silently regress.
 
 **Detect and report to the user — do NOT attempt** (out of scope; these need design
 judgement and can introduce subtle deadlocks or performance cliffs):
