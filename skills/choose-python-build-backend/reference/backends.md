@@ -242,3 +242,88 @@ build-backend = "setuptools.build_meta"
 
 Keep it for an existing, working C-extension build; for **new** compiled projects
 prefer scikit-build-core / meson-python / maturin. See `why-not-setuptools.md`.
+
+### Forcing a platlib wheel (prebuilt / external binaries)
+
+setuptools decides **purelib vs platlib** from whether the `Distribution` reports
+`ext_modules`. If you ship a **prebuilt** binary — a `.so`/`.dll`/`.dylib` built by
+an external toolchain (Rust/Go/CMake, or a vendored/downloaded lib loaded via
+ctypes/cffi) with **no setuptools `Extension`** — setuptools sees a pure package and
+tags the wheel `py3-none-any` (purelib). That is **wrong and dangerous**: a
+platform-specific wheel gets installed on every platform. Force platlib one of two
+ways; they produce **different tags** — pick by whether the binary is bound to the
+CPython ABI.
+
+**Prerequisite — a `pyproject.toml` with a setuptools floor.** Both recipes keep a
+`setup.py`, but under PEP 517 build isolation the build runs against whatever
+`[build-system].requires` pins — not your local setuptools. So the project **must**
+ship a `pyproject.toml`, and the floor **must** be high enough, or the isolated
+build env can pull an older setuptools that lacks the integrated `bdist_wheel`
+(recipe 2's import fails) or silently builds the purelib default:
+
+```toml
+[build-system]
+requires = ["setuptools>=70.1"]
+build-backend = "setuptools.build_meta:__legacy__"
+```
+
+`70.1` is the floor for recipe 2 (integrated `bdist_wheel` command); recipe 1 only
+needs a setuptools new enough to build wheels, but `>=70.1` is the safe floor for
+both and lets you drop the separate `wheel` build dep.
+
+Both recipes live in `setup.py`, so use the **`:__legacy__`** backend. It puts the
+project root on `sys.path`, so a `setup.py` that imports a sibling module (a local
+`_build.py`, a version helper) keeps working — the same behavior a project gets with
+no `[build-system]` table at all. The plain `setuptools.build_meta` is stricter and
+does **not** add the root to `sys.path`; switch to it only once the `setup.py` has
+no such imports.
+
+**1. Mark the distribution impure** — full **interpreter+ABI** tag
+(`cp312-cp312-linux_x86_64`). Use when the binary is linked against a specific
+CPython ABI:
+
+```python
+from setuptools import setup
+from setuptools.dist import Distribution
+
+
+class BinaryDistribution(Distribution):
+    def has_ext_modules(self):
+        return True
+
+
+setup(distclass=BinaryDistribution)
+```
+
+**2. Override `bdist_wheel`** — platform-specific but **ABI-agnostic** tag
+(`py3-none-linux_x86_64`), so one wheel serves all Python 3.x. Use for a prebuilt
+lib loaded via **ctypes/cffi** (not linked to the CPython ABI):
+
+```python
+# setuptools >= 70.1 (older setuptools: from wheel.bdist_wheel import bdist_wheel)
+from setuptools.command.bdist_wheel import bdist_wheel as _bdist_wheel
+
+
+class bdist_wheel(_bdist_wheel):
+    def finalize_options(self):
+        super().finalize_options()
+        self.root_is_pure = False  # -> platlib
+
+    def get_tag(self):
+        _, _, plat = super().get_tag()
+        return "py3", "none", plat  # any Python 3, ABI-agnostic, this platform
+
+
+setup(cmdclass={"bdist_wheel": bdist_wheel})
+```
+
+- `root_is_pure = False` is what flips the install location to **platlib**; the
+  `get_tag` override controls the **compatibility tag**.
+- Recipe 2's `from setuptools.command.bdist_wheel import bdist_wheel` is why the
+  floor above is **≥ 70.1** (2024-06, when setuptools absorbed `wheel`'s command).
+  To support older setuptools instead, import `from wheel.bdist_wheel import
+  bdist_wheel` and add `wheel` to `requires` — but since wheel 0.46 that module is a
+  deprecated alias, so for new work keep the `setuptools>=70.1` pin and drop `wheel`.
+- Neither trick sets a **minimum** platform floor (manylinux / macOS deployment
+  target). Use `auditwheel`/`delocate` — or just build under **cibuildwheel** — to
+  get portable, correctly-floored platform tags.
