@@ -38,8 +38,13 @@ skills need a closer human review of their results.
 
 ## Working in this repo
 
-- **Always work on a branch** — never commit to `main`. Branch first, commit
-  there, open a PR.
+- **Always work on a _new_ branch, one per change** — never commit to `main`, and
+  never reuse, reset, or add commits to a branch left over from earlier work. Start
+  each task by branching off freshly-fetched `main`
+  (`git fetch origin && git switch -c <name> origin/main`), commit there, open a PR.
+  When the user says "create a new branch," run `git switch -c` for a brand-new
+  branch — do **not** reinterpret it as committing onto the current branch. One
+  branch = one PR = one logical change; don't mix unrelated changes on a branch.
 - **Follow standard commit-message conventions:** an imperative subject line of
   **≤50 characters** (capitalized, no trailing period), a blank line, then a body
   wrapped at **72 columns** explaining the *why* / user impact — not a file-by-file
