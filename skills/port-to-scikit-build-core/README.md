@@ -1,7 +1,7 @@
 # Skill: port a package build to scikit-build-core + CMake
 
 Migrate a Python package with a compiled (C/C++/CUDA) extension from a bespoke
-`setup.py` / setuptools build to **scikit-build-core + CMake** (PEP 517/518/621):
+`setup.py` / setuptools build to **scikit-build-core + CMake** ([PEP 517](https://peps.python.org/pep-0517/)/[518](https://peps.python.org/pep-0518/)/[621](https://peps.python.org/pep-0621/)):
 a declarative `pyproject.toml`, CMake for the native code, standards-based
 wheels/sdists, editable installs, and optional abi3 via nanobind.
 

@@ -8,17 +8,11 @@ thread-local, or guard it with a lock.
 
 ## Scope: detect everything, fix only the simple cases
 
-The agent's job here is **detection first**. Report every unprotected shared-state
-finding. Apply a fix *only* when it is local and obviously correct:
-
-- ✅ **Safe to fix:** borrowed→strong reference swaps; a single atomic counter/flag; a
-  critical section or a small `PyMutex` region around one self-contained
-  read-modify-write on an object you own; adding the `Py_mod_gil` declaration.
-- 🚩 **Detect and hand to the user:** shared mutable data structures needing redesign,
-  structural global-state/thread-local conversions, non-reentrant-library
-  serialization strategy, and any multi-lock ordering. These carry deadlock and
-  performance risk and are the maintainer's design call. For each, give
-  **file:line → what is shared → why it races → candidate fix**, then stop.
+Detection is the deliverable; apply a fix only when it's local and obviously correct.
+The full fix-vs-report boundary is in [SKILL step 5](../SKILL.md) — this file is the
+*how* (heuristics and patterns). Throughout, **✅** tags a pattern that's safe to fix in
+place and **🚩** one to report to the maintainer (file:line → what's shared → why it
+races → candidate fix) rather than attempt.
 
 ## Finding shared state (detection heuristics)
 
@@ -184,27 +178,23 @@ the data it guards. x86 hides this — **test on ARM** (see
   `_Atomic`, so the same struct still compiles in non-atomic contexts:
   `atomic_load_explicit((_Atomic(uint8_t)*)&cache->initialized, memory_order_acquire)`.
 
-### Lock-free / CAS — where to point the user, not what to write
+### Lock-free / CAS — report, don't write (🚩)
 
 Beyond a single atomic word lies **lock-free programming**: compare-and-swap
-(`atomic_compare_exchange_*`) retry loops, atomic linked-list/stack pushes, seqlocks,
-hazard pointers, RCU. It is the right tool for a genuinely hot, contended structure —
-but it is also where the ABA problem, missing barriers, and reclamation bugs live, and
-those failures are non-deterministic and near-impossible to reproduce.
+(`atomic_compare_exchange_*`) retry loops, atomic stack/list pushes, seqlocks, hazard
+pointers, RCU. It suits a genuinely hot, contended structure — but it is also where the
+ABA problem, missing barriers, and reclamation bugs live, and those failures are
+non-deterministic and near-impossible to reproduce. It is a **🚩 report finding, not a
+fix to apply.**
 
-This is a **🚩 report-to-the-maintainer finding, not a fix to apply.** If making a
-structure safe seems to *require* a CAS loop or a hand-rolled lock-free algorithm, that
-is the signal to stop: report the location, why a plain lock/critical section is a
-contention concern, and that a lock-free design is a deliberate engineering decision.
-Point the user at the primitives and literature rather than writing it:
-
-- **CPython already ships the common lock-free fast paths** (optimistic `dict`/`list`
-  reads with a per-object-lock fallback) — prefer reusing those via the container APIs
-  over inventing your own.
-- The correct first move is almost always a `PyMutex` or critical section; only escalate
-  to lock-free with a measured contention problem and a reviewer who knows the memory
-  model. C++: `std::atomic` + a known-correct pattern; Rust: an audited crate
-  (`crossbeam`, `arc-swap`) over hand-rolled `unsafe`.
+If safety seems to *require* a CAS loop or a hand-rolled lock-free algorithm, stop and
+report it (location, why a plain lock is a contention concern, that lock-free is a
+deliberate design choice). Steer the user toward existing tools, not new `unsafe` code:
+CPython already provides the common lock-free fast paths (optimistic `dict`/`list` reads
+with a per-object-lock fallback) — reuse them via the container APIs. The first move is
+almost always a `PyMutex` or critical section; escalate only with measured contention
+and a reviewer who knows the memory model (C++ `std::atomic` with a known-correct
+pattern; Rust via an audited crate like `crossbeam`/`arc-swap`).
 
 ## Global state, caches, and unsafe libraries (usually report, don't fix)
 

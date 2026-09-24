@@ -4,7 +4,7 @@ Port a **hand-written** CPython C/C++ extension (written directly against `Pytho
 from the full, version-specific C API to the **Limited API**, so it builds one
 **`abi3`** wheel per platform that loads on that Python **and every later one** —
 instead of a fresh `cpXY` wheel every release. Optionally then target **Python 3.15
-`abi3t`** (PEP 803 + PEP 793 `PyModExport`) for a single wheel that *also* covers the
+`abi3t`** ([PEP 803](https://peps.python.org/pep-0803/) + [PEP 793](https://peps.python.org/pep-0793/) `PyModExport`) for a single wheel that *also* covers the
 free-threaded build. The usual first and largest step is converting static
 `PyTypeObject` types to **heap types**; the skill also covers module state, multi-phase
 init, API substitutions, and the build flags / wheel tags. The content is

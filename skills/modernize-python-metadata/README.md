@@ -1,12 +1,12 @@
 # Skill: modernize Python packaging metadata
 
-Improve a Python package's metadata and move it into a PEP 621 `[project]` table
+Improve a Python package's metadata and move it into a [PEP 621](https://peps.python.org/pep-0621/) `[project]` table
 in `pyproject.toml`, filling in what's missing. Covers dropping the
 `open("README.md").read()` hack for the `readme` field, **SPDX license
 expressions** (an expression + `license-files`, never the full text), trove
 classifiers (including `Private :: Do Not Upload`), **well-known project URLs**,
 authors/keywords/`requires-python`, dependency version constraints (**floors, not
-caps**), **PEP 735 dependency groups vs extras**, and the `[build-system]` table.
+caps**), **[PEP 735](https://peps.python.org/pep-0735/) dependency groups vs extras**, and the `[build-system]` table.
 
 **Keeps your build backend** — setuptools is a fine choice and reads `[project]`;
 this skill moves *metadata*, it does not remove setuptools or change how the

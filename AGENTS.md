@@ -78,6 +78,10 @@ skills need a closer human review of their results.
   the skill (trigger conditions); the `README.md` cell describes *what it does*.
 - Keep prose lean. Draft with AI if you like, but read and cut it down before
   committing — unedited AI text is long, unchecked, and expensive to review.
+- **Link PEP references in human-facing docs.** In `README.md` files (the root index
+  and each skill's), write a PEP mention as a link to `https://peps.python.org/pep-XXXX/`
+  — zero-padded, e.g. `[PEP 517](https://peps.python.org/pep-0517/)` — on first mention
+  per file. `SKILL.md`/`AGENTS.md` are agent-facing and need no such linking.
 
 ## Pointing another project at a skill
 
