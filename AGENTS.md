@@ -68,6 +68,12 @@ skills need a closer human review of their results.
   the numbered steps; do not inline them into the workflow.
 - Do not duplicate the workflow into the per-skill `AGENTS.md`/`README.md`; those
   are thin adapters that point back at `SKILL.md`.
+- **Register the skill in both index tables, in the same change.** Adding, renaming,
+  or removing a skill must update the `## Skills` table here in `AGENTS.md` *and* the
+  `## Skills` table in the root [`README.md`](README.md) (the human-facing index) —
+  they must list the same skills. Add a row to `skills/reference-repos.md` too when
+  the skill introduces a grounding repo. The `AGENTS.md` cell describes *when to use*
+  the skill (trigger conditions); the `README.md` cell describes *what it does*.
 - Keep prose lean. Draft with AI if you like, but read and cut it down before
   committing — unedited AI text is long, unchecked, and expensive to review.
 

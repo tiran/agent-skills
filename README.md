@@ -29,6 +29,7 @@ projects they draw on are listed in
 | [`secure-python-release-pipeline`](skills/secure-python-release-pipeline/) | Experimental | A secure **GitHub Actions** build/release pipeline — sdist + wheels (cibuildwheel), **Trusted Publisher** to PyPI, minimal permissions, zizmor. |
 | [`modernize-python-metadata`](skills/modernize-python-metadata/) | Experimental | Improve packaging **metadata** and move it into a PEP 621 `[project]` table — readme, **SPDX license**, classifiers, well-known URLs, dependency groups, no version caps. Keeps setuptools. |
 | [`choose-python-build-backend`](skills/choose-python-build-backend/) | Experimental | Recommend the right **build backend** (uv-build, flit, hatchling, meson-python, scikit-build-core, maturin, setuptools) by purelib/platlib, static/dynamic metadata, and language — with migration context. |
+| [`crypto-fips-audit`](skills/crypto-fips-audit/) | Experimental | Audit a Python package — and any **C/C++/Go/Rust** it ships — for its use of cryptography: inventory what it uses, find **insecure/weak crypto** (AES-ECB, RSA PKCS#1 v1.5, static IV/nonce, `random` for secrets, disabled TLS verification, weak keys), and assess **FIPS 140-3** compliance (refused/restricted hashes, non-approved primitives, vendored/static crypto that escapes the validated module, hardcoded TLS, bundled CA stores). Source-first, confirmed against the built wheel/binaries. Gathers evidence; does not certify. |
 
 **Status** reflects how battle-tested a skill is:
 
