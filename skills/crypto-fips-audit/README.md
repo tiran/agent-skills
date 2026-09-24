@@ -44,7 +44,7 @@ policy moves. Verify every finding against the sources linked in `SKILL.md`.
 | `reference/python-audit.md` | Stdlib under FIPS + the problematic-PyPI-package table + grep starting points. |
 | `reference/native-crypto.md` | Validated vs compliant vs capable; approved providers; why vendoring breaks the boundary; per-language build flags; provenance; CA trust. |
 | `reference/binary-inspection.md` | Per-format binary inspection (CLI + pyelftools/macholib/pefile); posture model; embedded SBOM; limitations; tooling. |
-| `scripts/scan_crypto.py` | Cross-format (ELF/Mach-O/PE) crypto evidence reader — `uv run` PEP 723 script; reads any arch/OS from one host. |
+| `scripts/scan_crypto.py` | Cross-format (ELF/Mach-O/PE) crypto evidence reader — `uv run` [PEP 723](https://peps.python.org/pep-0723/) script; reads any arch/OS from one host. |
 
 ## Related
 

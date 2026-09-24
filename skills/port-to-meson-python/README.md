@@ -1,6 +1,6 @@
 # Skill: build (or port) a package with meson-python + Meson
 
-Build a Python package with the **meson-python** PEP 517 backend — scaffold a new
+Build a Python package with the **meson-python** [PEP 517](https://peps.python.org/pep-0517/) backend — scaffold a new
 project or port one off a bespoke `setup.py`. Covers the `pyproject.toml`
 backend, the `meson.build` (`project` / `extension_module` / `install_sources`),
 VCS/dynamic versioning computed in `meson.build`, editable installs,

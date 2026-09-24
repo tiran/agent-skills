@@ -5,7 +5,7 @@ split sdist and wheel builds (wheels build **from** the sdist, so a broken sdist
 is caught), publish to PyPI via a **Trusted Publisher** (OIDC, no API token) from
 a dedicated job, use **cibuildwheel** for C/C++/Rust wheels, and harden the
 pipeline (minimal permissions, SHA-pinned actions, no cache on release, **zizmor**
-audit, PEP 740 attestations).
+audit, [PEP 740](https://peps.python.org/pep-0740/) attestations).
 
 **Status: Experimental** — assembled from two real shipping projects (pycxxfilt,
 zipwire) plus upstream docs; the consolidated workflow is a new draft. Review

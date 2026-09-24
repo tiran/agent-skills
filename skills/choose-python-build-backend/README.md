@@ -1,6 +1,6 @@
 # Skill: choose a Python build backend
 
-Recommend the right PEP 517 build backend for a new or existing Python package,
+Recommend the right [PEP 517](https://peps.python.org/pep-0517/) build backend for a new or existing Python package,
 and give enough context to migrate. Chooses by three axes — **purelib** (pure
 Python) vs **platlib** (compiled C/C++/Rust/Torch/…), **static vs dynamic/VCS
 metadata**, and the **native language/build system** — then points at the skill
