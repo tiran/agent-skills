@@ -106,6 +106,35 @@ scan found 17 abi3 users in the top 360 PyPI packages):
 | [`jquast/wcwidth`](https://github.com/jquast/wcwidth) | `cp310` | A formerly pure-Python library's [pure→C-extension transition](https://github.com/jquast/wcwidth/commit/b7a3098bd087c6d04776c44c00fe4298299cd793) (optional `build_ext`, pure fallback). The "verify the artifact, not the tag" example. |
 | [`pyca/cryptography`](https://github.com/pyca/cryptography) | `cp311` | Rust/PyO3 (maturin): `cp311-abi3` for GIL builds + version-specific `cp3XXt` free-threaded wheels — the transition table in the wild. Also under *Compiled extensions & ABI*. |
 
+## Free-threading (no-GIL)
+
+Grounding for [`port-to-free-threaded-python`](port-to-free-threaded-python/SKILL.md).
+The **authorities are the CPython docs and the community porting guide**, not a tool;
+the trackers give real adoption data.
+
+| Resource | Author | Worth studying for |
+| --- | --- | --- |
+| [py-free-threading.github.io](https://py-free-threading.github.io/) | Quansight & the FT community | The definitive porting guides — [Python](https://py-free-threading.github.io/porting/) and [extensions](https://py-free-threading.github.io/porting-extensions/) (`Py_mod_gil`, critical sections, `PyMutex`, borrowed-ref hazards, TSan, `pytest-run-parallel`) — plus the per-package [tracking](https://py-free-threading.github.io/tracking/) table. The primary source for this skill. |
+| [CPython free-threading HOWTOs](https://docs.python.org/3/howto/free-threading-python.html) | CPython | The [runtime](https://docs.python.org/3/howto/free-threading-python.html) and [C-API](https://docs.python.org/3/howto/free-threading-extensions.html) guides — detection (`sys._is_gil_enabled()`, `Py_GIL_DISABLED`), the GIL-re-enable behavior, and the authoritative extension API. |
+| [PEP 703](https://peps.python.org/pep-0703/) / [PEP 803](https://peps.python.org/pep-0803/) | Sam Gross / Petr Viktorin | PEP 703 (making the GIL optional): the refcount/layout internals that explain *why* borrowed refs and globals race. PEP 803 (`abi3t`): the free-threaded stable ABI, handed to `port-to-python-limited-api`. |
+| [hugovk.dev/free-threaded-wheels](https://hugovk.dev/free-threaded-wheels/) | Hugo van Kemenade | Daily-updated adoption tracker over the top 360 extension packages (detects the `cp3Xt` tag). Grounds the "~70% already ship a FT wheel" figure in `reference/background.md`. |
+| [`Quansight-Labs/pytest-run-parallel`](https://github.com/Quansight-Labs/pytest-run-parallel) | Quansight | Runs an existing pytest suite from many threads (`--parallel-threads=auto`) — the cheapest race-finder (SKILL step 7). Pairs with ThreadSanitizer for the authoritative check. |
+
+**Real-world ports** (source-verified Sept 2026 against the local checkouts noted;
+they double as **stable-ABI** references — see the abi3 section above):
+
+| Repo | Studied at | Free-threading lessons | Stable-ABI axis |
+| --- | --- | --- | --- |
+| [`numpy/numpy`](https://github.com/numpy/numpy) | 2.6.0.dev | Version-guarded `Py_mod_gil` slot; portable `PyMutex`/`PyThread_type_lock` lock macro (`npy_argparse.c`); critical-section + double-checked cache fill (`convert_datatype.c`); `NPY_TLS` scratch buffers (`dragon4.c`); C11 atomics; a **borrowed-ref CI linter** (`tools/ci/check_c_api_usage.py`) with `// noqa: borrowed-ref OK`; import-must-not-re-enable-GIL release gate; TSan CI (instruments OpenBLAS) + suppressions; **deliberately does not lock `ndarray`** and says so. | `meson.build` sets `Py_LIMITED_API='3.13'` on GIL builds, **blanks it on FT** (no abi3 before abi3t) — the abi3-vs-abi3t interaction in the wild. |
+| [`scipy/scipy`](https://github.com/scipy/scipy) | main | Project-wide Cython `-Xfreethreading_compatible=True` in `scipy/meson.build`; the **non-reentrant-library playbook** — rewrite SAVE/COMMON state to reentrant (`ARNAUD_state_s`, VODE→C), serialize with a per-handle lock (Qhull), or **detect-and-refuse** (`IntegratorConcurrencyError`); `scipy.sparse` **documented as not thread-safe**; `SCIPY_TLS` + `threading.local()` caches; `pytest-run-parallel` + `thread_unsafe`/`parallel_threads_limit` markers + barrier helper. | Ships version-specific `cp3Xt`; same abi3/FT mutual-exclusion pre-3.15. |
+| [`PyO3/pyo3`](https://github.com/PyO3/pyo3) | 0.29 | Free-threaded **by default since 0.28** (`gil_used = true` opts out); `pyo3::sync` toolbox (`PyMutex`, `PyOnceLock`, `MutexExt::lock_py_attached`) after `GILProtected` was removed; `with_critical_section` = the C macros; `#[cfg(Py_GIL_DISABLED)]`; runtime "Already borrowed" panics; the 0.26 `with_gil`→`attach` renames. | `abi3`/`abi3-pyXX` features for one wheel across GIL Python versions; **0.29 adds `abi3t`** (PEP 803) for the free-threaded stable ABI on 3.15+ — abi3 is silently downgraded to a version-specific FT build before then. |
+
+Also worth reading: **CPython** itself (`Include/critical_section.h`, `pylock.h`,
+ported stdlib modules like `Objects/listobject.c`, `Modules/_collectionsmodule.c`),
+**Cython** (the `freethreading_compatible` directive + `docs/src/userguide/freethreading.rst`),
+and **nanobind** (`docs/free_threaded.rst`, `nb::ft_mutex`/`ft_object_guard`, split-mode
+`abi3t`). See each skill's `reference/` files for the `file:line` citations.
+
 ## Crypto / FIPS auditing
 
 Grounding for [`crypto-fips-audit`](crypto-fips-audit/SKILL.md). The **authorities
