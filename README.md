@@ -1,24 +1,18 @@
 # agent-skills
 
-Portable, agent-neutral skills and playbooks for coding tasks (Python, PyTorch,
-and systems work). Each skill is a small folder of Markdown with a defined
-workflow, on the open Agent Skills standard — so the same files work across
-Claude Code, Codex, and other coding agents.
-
-## How these were written
-
-The skills and their reference material are **AI-generated, but grounded** — not
-invented. They are distilled from real project migrations, upstream
-contributions, the current PyPA and tool documentation, and writing by other
-packaging practitioners, then cross-checked against those sources and reviewed by
-hand — informed by two decades of Python experience, including work as a CPython
-core developer. The recommendations reflect established practice, not just model
-output. Treat them as a well-sourced starting point, follow the linked authoritative docs
-when in doubt, and see each skill's **Status** for how battle-tested it is. The
-projects they draw on are listed in
-[`skills/reference-repos.md`](skills/reference-repos.md).
+Portable, agent-neutral **skills** for Python packaging and compiled-extension
+work: choosing a build backend, modernizing packaging metadata, porting C/C++
+extension ABIs (stable ABI / abi3, free-threading, PyTorch), building a secure
+release pipeline, and auditing crypto/FIPS use. A skill is a small folder of
+Markdown with a defined workflow, on the open Agent Skills standard — so the same
+files work across Claude Code, Codex, and other coding agents. They are
+**AI-generated but grounded**, hand-reviewed by a CPython core developer
+([how](#how-these-were-written)).
 
 ## Skills
+
+Grouped by topic — build backends, then packaging metadata, then
+compiled-extension and ABI ports, then release and auditing:
 
 | Skill | Status | What it does |
 | --- | --- | --- |
@@ -44,6 +38,14 @@ All skills share a common [`skills/GUARDRAILS.md`](skills/GUARDRAILS.md) —
 operating rules the agent follows unless you say otherwise: use uv + a project
 `.venv` (never global installs), don't delete content or commit/push without
 approval, ask before heavy installs/compiles, and match the project's style.
+
+## Requirements
+
+The skills drive real builds, so the agent needs a working Python build
+environment: [uv](https://docs.astral.sh/uv/) for every skill, plus — for the
+compiled-extension skills — a C/C++ compiler (and CUDA/Fortran toolchains where
+relevant) and your platform's Python development headers (`python3-dev` on
+Debian/Ubuntu, `python3-devel` on Fedora/RHEL).
 
 ## Install
 
@@ -116,6 +118,19 @@ agent-skills/
         ├── SKILL.md          # the workflow — the skill's source of truth
         └── reference/        # tables and background, referenced on demand
 ```
+
+## How these were written
+
+The skills and their reference material are **AI-generated, but grounded** — not
+invented. They are distilled from real project migrations, upstream
+contributions, the current PyPA and tool documentation, and writing by other
+packaging practitioners, then cross-checked against those sources and reviewed by
+hand — informed by two decades of Python experience, including work as a CPython
+core developer. The recommendations reflect established practice, not just model
+output. Treat them as a well-sourced starting point, follow the linked authoritative docs
+when in doubt, and see each skill's **Status** for how battle-tested it is. The
+projects they draw on are listed in
+[`skills/reference-repos.md`](skills/reference-repos.md).
 
 ## Improving a skill
 
