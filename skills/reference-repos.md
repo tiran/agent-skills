@@ -83,6 +83,29 @@ posts, `python-launcher`.
 versions; **abi3** yields one wheel across *Python* versions. The examples above
 each show one axis; combining both is what `port-to-torch-stable-abi` assembles.
 
+## Limited API / stable ABI (abi3)
+
+The deterministic tooling behind
+[`port-to-python-limited-api`](port-to-python-limited-api/SKILL.md). There is **no**
+automatic static→heap-type rewriter — that step stays a guided manual edit — but the
+mechanical parts (API modernization, verification) are well-covered.
+
+| Repo | Author | Worth studying for |
+| --- | --- | --- |
+| [`python/pythoncapi-compat`](https://github.com/python/pythoncapi-compat) | Victor Stinner (PyPA) | A single `pythoncapi_compat.h` header that back-fills modern C API (`Py_NewRef`, `Py_SET_TYPE`, `PyModule_AddObjectRef`, …) onto old Pythons, plus `upgrade_pythoncapi.py`, a regex-based rewrite script. What lets one code base compile from a very low floor upward (step 5). Back-fills API; does **not** prove abi3-safety — that's abi3audit. |
+| [`pypa/abi3audit`](https://github.com/pypa/abi3audit) | Trail of Bits / PyPA | Scans a `.so`, wheel, or whole PyPI history for symbols outside the declared abi3 floor. Nothing in pip/CPython enforces that an `abi3`-tagged wheel is actually clean, so this is the authoritative verification (step 9); ToB's survey found ~1 in 6 abi3 wheels mistagged. |
+| [`Quansight/torch-abi-audit`](https://github.com/Quansight/torch-abi-audit) | Quansight | Cross-format object-file symbol reader (`nm -D` fallback for the audit); also listed under *My projects*. Pairs with the Quansight *[CPython ABI](https://labs.quansight.org/blog/python-abi-abi3t)* write-up that grounds `reference/background.md`. |
+
+**Real-world adopters** (worked examples for `reference/background.md`; a Sept 2026
+scan found 17 abi3 users in the top 360 PyPI packages):
+
+| Repo | Floor | Worth studying for |
+| --- | --- | --- |
+| [`giampaolo/psutil`](https://github.com/giampaolo/psutil) | `cp36` | Hand-written C at the lowest floor in the survey — one wheel back to 3.6. The C-extension case this skill targets. |
+| [`protocolbuffers/protobuf`](https://github.com/protocolbuffers/protobuf) | `cp310` | C++ (`upb`) abi3 wheel **plus** a `py3-none-any` pure fallback — install succeeds where no binary matches. |
+| [`jquast/wcwidth`](https://github.com/jquast/wcwidth) | `cp310` | A formerly pure-Python library's [pure→C-extension transition](https://github.com/jquast/wcwidth/commit/b7a3098bd087c6d04776c44c00fe4298299cd793) (optional `build_ext`, pure fallback). The "verify the artifact, not the tag" example. |
+| [`pyca/cryptography`](https://github.com/pyca/cryptography) | `cp311` | Rust/PyO3 (maturin): `cp311-abi3` for GIL builds + version-specific `cp3XXt` free-threaded wheels — the transition table in the wild. Also under *Compiled extensions & ABI*. |
+
 ## Crypto / FIPS auditing
 
 Grounding for [`crypto-fips-audit`](crypto-fips-audit/SKILL.md). The **authorities
