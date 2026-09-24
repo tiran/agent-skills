@@ -126,6 +126,10 @@ Choose by the native toolchain; each has a dedicated migration skill:
 - **Legacy C/C++ extension you don't want to re-architect the build for** →
   **setuptools** (native C/C++) or **setuptools-rust** (Rust), with
   **setuptools-scm** for VCS versions. Valid, but see step 4.
+- **Prebuilt / externally-built binary, no setuptools `Extension`** (a `.so`/`.dll`
+  from Rust/Go/CMake, or a ctypes/cffi lib) → setuptools wrongly tags it purelib
+  `py3-none-any`; **force platlib** (`has_ext_modules` or a `bdist_wheel` override).
+  Recipe in `reference/backends.md` → "Forcing a platlib wheel".
 
 All compiled backends support VCS/dynamic versioning through their own mechanism
 (maturin from `Cargo.toml`/VCS, scikit-build-core via metadata providers,
