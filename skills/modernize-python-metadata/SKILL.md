@@ -60,11 +60,12 @@ relevant tools (and their floors in `[build-system].requires`):
 - **`[dependency-groups]`** (PEP 735) → a resolver that supports it (pip ≥ 25.1,
   or uv) — it's not build metadata, so the backend version doesn't matter, but old
   pip won't understand `--group`. If a **Hatch environment** must consume a group
-  (via the `dependency-groups` env key), require **Hatch ≥ 1.16.3** and bump that
-  floor wherever Hatch is pinned (e.g. a `[tool.hatch]`/CI constraint or a `hatch`
-  entry in a dev group); older Hatch has no way to read a group and its `features`
-  key sees extras only (step 8). This is the **Hatch** env-runner version, not
-  hatchling the backend.
+  (via the `dependency-groups` env key), pin **Hatch ≥ 1.18.0** — the functional
+  fix landed in 1.16.3, but `tool.hatch.requires-hatch` (which enforces the floor
+  in-tree) exists only from 1.18.0, so use it as the single coherent floor and
+  keep any CI/dev-group pin on the same bound; older Hatch has no way to read a
+  group and its `features` key sees extras only (step 8). This is the **Hatch**
+  env-runner version, not hatchling the backend.
 
 When in doubt, check each tool's changelog and set conservative floors. Rule of
 thumb: use current setuptools/hatchling, `build`, and twine. The rest of this
@@ -250,11 +251,11 @@ dev  = [{ include-group = "test" }, { include-group = "docs" }, "ruff"]
 > reads `[project.optional-dependencies]` (extras) **only** — it cannot consume a
 > `[dependency-groups]` group, so blindly relocating a `test`/`docs` set there
 > silently breaks the env wiring. Either keep those dev sets as extras, or rewire
-> the env to the separate `dependency-groups` key and **require Hatch ≥ 1.16.3**
-> (the key landed in 1.16.0 but 1.16.3 fixes it for non-builder envs) — pin that
-> floor wherever Hatch is constrained. Same caution for any other consumer (tox,
-> nox, CI) that references extras rather than `--group`. Check *how the sets are
-> consumed* before moving them.
+> the env to the separate `dependency-groups` key and **pin Hatch ≥ 1.18.0**
+> (the fix landed in 1.16.3, but `tool.hatch.requires-hatch` enforces the floor
+> in-tree only from 1.18.0 — use it as the single floor). Same caution for any
+> other consumer (tox, nox, CI) that references extras rather than `--group`.
+> Check *how the sets are consumed* before moving them.
 
 More (including `include-group` and the Hatch caveat): `reference/dependencies.md`.
 

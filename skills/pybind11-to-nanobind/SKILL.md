@@ -102,7 +102,9 @@ nanobind_add_module(_C ${SOURCES})          # target name must match NB_MODULE(_
 install(TARGETS _C LIBRARY DESTINATION mypkg)
 ```
 
-Add `"nanobind>=2"` to `build-system.requires`. Real CMake + `pyproject.toml`
+Add `"nanobind>=3"` to `build-system.requires` (nanobind 3 requires Python
+3.10+ and is what enables the single-abi3-wheel *split mode* below; drop to
+`>=2` only if you must support Python 3.8/3.9 without abi3). Real CMake + `pyproject.toml`
 from a torch extension: `reference/example.md`.
 
 ## 3. Headers and namespace
