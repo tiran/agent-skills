@@ -254,12 +254,15 @@ all C++/CUDA sources.
 ## 8. Editable installs and the dev workflow
 
 ```bash
+pip install scikit-build-core cmake ninja             # build deps present for --no-build-isolation
 pip install -e . --no-build-isolation                 # editable dev install
 pip install -e . --no-build-isolation -Ceditable.rebuild=true   # auto-rebuild on import
 uv build --wheel --no-build-isolation                 # build a wheel (or: python -m build --wheel --no-isolation)
 ```
 
-Replace old `python setup.py …` invocations: `develop` → editable install above;
+`--no-build-isolation` needs the backend and native toolchain already in the
+env (first line); the editable auto-rebuild also needs them present at import
+time. Replace old `python setup.py …` invocations: `develop` → editable install above;
 `bdist_wheel` → `uv build` (or `python -m build`); `install` → `pip install .`.
 
 ## 9. Optional: abi3 / free-threading via nanobind
@@ -279,23 +282,29 @@ wheel.py-api = "cp312"   # emit cp312-abi3 on 3.12+; per-version wheels below
 ```
 
 Disable abi3 on free-threaded builds **before CPython 3.15** (pip refuses abi3
-there). Introduced in Python 3.15, [PEP 803](https://peps.python.org/pep-0803/)
-**abi3t** is a stable ABI whose compatible interpreters are a *superset* of abi3's
-— a `.abi3t.so` loads on **both** GIL-enabled and free-threaded 3.15+ — so the
-combined **`abi3.abi3t`** tag (`wheel.py-api = "cp315.cp315t"`, CMake ≥4.4) ships
-one wheel for regular *and* free-threaded Python ≥3.15. pybind11 is *not*
-abi3-capable; use nanobind or a hand-written `PyType_FromSpec` module.
+there). From 3.15, the combined **`abi3.abi3t`** tag (`wheel.py-api =
+"cp315.cp315t"`, CMake ≥4.4) ships one wheel for regular *and* free-threaded
+Python — see [PEP 803](https://peps.python.org/pep-0803/) and the full abi3/abi3t
+model in
+[`port-to-python-limited-api`](../port-to-python-limited-api/reference/background.md).
+pybind11 is *not* abi3-capable; use nanobind or a hand-written `PyType_FromSpec`
+module.
 
 ## 10. Wheels / CI
 
 Drive `cibuildwheel` from `pyproject.toml` (`[tool.cibuildwheel]`): select
 Python versions, `test-requires`, and an audit gate (e.g. `abi3audit` for abi3
 wheels, `auditwheel`/`delocate` for manylinux/macOS). CMake caching + `ccache`
-still applies inside the CI containers.
+still applies inside the CI containers. For the publish/release half — building
+wheels from the sdist, Trusted Publishing to PyPI, hardened permissions — see
+[`secure-python-release-pipeline`](../secure-python-release-pipeline/).
 
 ## 11. Verify and delete the old build
 
-1. `uv build` → produces both sdist and wheel with no `setup.py`.
+1. `uv build` → produces both sdist and wheel with no `setup.py`. `uv build`
+   (like `python -m build`) builds the wheel *from* the sdist by default, so this
+   already catches a broken sdist — missing CMake sources, or a VCS-version
+   fallback to `PKG-INFO` — before you install anything.
 2. `pip install dist/*.whl` in a clean env; `import mypkg`; run the test suite.
 3. Rebuild incrementally (touch one source) and confirm the CMake cache is reused.
 4. Delete `setup.py`, `setup.cfg` (if fully migrated), and `MANIFEST.in`; update

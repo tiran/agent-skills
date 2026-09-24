@@ -74,7 +74,9 @@ Notes:
   (`wheel.py-api = "cp315.cp315t"`, needs CMake ≥4.4), maturin (`abi3t-py315`),
   or meson-python — and one stable-ABI wheel serves regular *and* free-threaded
   CPython ≥3.15. (An `abi3t`-*only* tag would restrict the wheel to free-threaded
-  interpreters, so emit the combined tag.)
+  interpreters, so emit the combined tag.) Full abi3/abi3t model and the
+  per-backend flags:
+  [`port-to-python-limited-api`](../../port-to-python-limited-api/reference/background.md).
 - **Parallel builds** are why NumPy and SciPy left setuptools for Meson: Ninja
   gives fast incremental and parallel compilation; setuptools does neither well
   and has **no isolation** when parallel builds share a working directory

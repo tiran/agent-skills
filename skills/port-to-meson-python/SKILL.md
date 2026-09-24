@@ -277,18 +277,22 @@ config-settings = { setup-args = "-Dpython.allow_limited_api=true" }
 ```
 
 Add `abi3audit` (abi3) or `auditwheel`/`delocate` (manylinux/macOS) as the gate.
+For the publish/release half — building wheels from the sdist, Trusted Publishing
+to PyPI, hardened permissions — see
+[`secure-python-release-pipeline`](../secure-python-release-pipeline/).
 
 ## 11. Verify and delete the old build
 
-1. `uv build` → sdist **and** wheel, no `setup.py` involved.
+1. `uv build` → sdist **and** wheel, no `setup.py` involved. `uv build` (like
+   `python -m build`) builds the wheel *from* the sdist by default, so this
+   already exercises the VCS-version fallback to `PKG-INFO` (step 5) and catches
+   files missing from the sdist.
 2. `pip install dist/*.whl` in a clean env; `import mypkg`; run the tests.
-3. Build from the *sdist* too (`pip install dist/*.tar.gz`) — this exercises the
-   VCS-version fallback to `PKG-INFO` (step 5).
-4. Editable install + touch one source → confirm the on-import rebuild.
-5. Delete `setup.py`, `setup.cfg`, `MANIFEST.in`; update docs/CI that called
+3. Editable install + touch one source → confirm the on-import rebuild.
+4. Delete `setup.py`, `setup.cfg`, `MANIFEST.in`; update docs/CI that called
    `python setup.py`.
 
 **Definition of done:** `uv build` yields an installable sdist + wheel
-with no `setup.py`; the package imports and tests pass from both wheel and sdist;
-editable install rebuilds on import; and, if targeted, one abi3 wheel loads
+with no `setup.py` (the wheel built from that sdist); the package imports and
+tests pass; editable install rebuilds on import; and, if targeted, one abi3 wheel loads
 across Python versions.
