@@ -224,7 +224,22 @@ interface — frontends don't care which backend you use:
    `[project]` table (keep it static where you can). Use
    [`modernize-python-metadata`](../modernize-python-metadata/).
 2. **Swap `[build-system]`.** Set `requires` + `build-backend` to the chosen
-   backend (exact strings per backend in `reference/backends.md`).
+   backend (exact strings per backend in `reference/backends.md`). PEP 517 builds
+   are **isolated** — the backend and everything in `requires` are installed into a
+   fresh throwaway env, and nothing is inherited from your dev environment. So
+   `requires` must list **every** build-time dependency: the backend itself plus
+   Cython, header-providing packages (numpy), a VCS-version tool, etc. If it isn't
+   in `requires`, it isn't there at build time. (The one deliberate exception is
+   building against a pre-installed dep like Torch with `--no-build-isolation` —
+   see `modernize-python-metadata`.)
+
+   **Migrating setuptools from a bare `setup.py`:** a project with no
+   `[build-system]` table is already built with **`setuptools.build_meta:__legacy__`**
+   (pip's implicit fallback), which puts the project root on `sys.path` so a
+   `setup.py` can import a sibling helper. Plain `setuptools.build_meta` is stricter
+   and does **not** — default to `:__legacy__` while a `setup.py` remains, and move
+   to plain `setuptools.build_meta` only once it's gone or has no local imports
+   (`reference/backends.md`).
 3. **Backend-specific config.** File selection (`tool.hatch.build` /
    `tool.scikit-build` / `tool.meson-python`), dynamic version plugin, etc.
 4. **Compiled builds are the real work** — authoring `CMakeLists.txt` /
