@@ -148,6 +148,24 @@ was available before 2.10. Grep it for every shim your code calls and take the
 (`python -c 'import torch,os; print(os.path.join(os.path.dirname(torch.__file__), "csrc/stable/c/shim_function_versions.txt"))'`)
 so it matches the headers you build against, not just `main`.
 
+**The shim table does not cover the C++ `torch::stable::` op wrappers.**
+`shim_function_versions.txt` lists only **C shim symbols** (`aoti_torch_*`,
+`torch_*`). The C++ convenience wrappers in `torch/csrc/stable/ops.h`
+(`torch::stable::index_select`, `narrow`, `pad`, `amax`, …) have their **own**
+per-version availability it does *not* capture — many landed well after 2.10
+(`index_select` first appears in **2.14**). Your dev machine's newer `ops.h`
+compiles calls that **don't exist at your declared floor**, so the wheel silently
+requires a higher Torch than you claim. Guard it two ways:
+
+- **Grep the *installed floor's* `ops.h`** for every `torch::stable::` op you call
+  — not `main`, not your dev box:
+  `grep -n 'inline .*\b<op>(' "$(python -c 'import torch,os;print(os.path.dirname(torch.__file__))')/include/torch/csrc/stable/ops.h"`.
+  The only real proof is a **compile against the floor Torch** (step 3).
+- **A missing op rarely forces a higher floor.** The native wrapper is usually
+  just a `torch_call_dispatcher` on the ATen schema (see how newer `ops.h`
+  implements it); replicate that as a small compat shim (`ports.md`) and keep your
+  low floor instead of raising it.
+
 setuptools projects usually compute the hex (`0x0MMmm00000000000`) from a
 `(major, minor)` tuple defined **once at module top level**, so the floor lives in
 a single place (causal-conv1d, state-spaces/mamba#1042):
@@ -249,6 +267,21 @@ means the device code isn't compiled or audited. Build once against the matching
 CUDA (or ROCm) Torch before you call the port done. Note also that a ROCm Torch
 reports `torch.version.hip` set **and** `torch.version.cuda` `None`, which is why
 the HIP branch must key off `torch.version.hip`, not the absence of CUDA.
+
+**Verify against your *floor* Torch, not just the latest.** Latest Torch provides
+every stable API, so it silently hides calls that don't exist at your declared
+floor — the C++ `ops.h` wrappers (step 2) and header-only helpers like
+`torch/headeronly/cuda/Atomic.h` (2.14+) are the usual culprits. The floor is only
+real once you've compiled the device code against a Torch **at** that floor:
+`uv pip install "torch==<floor>.*" --index-url https://download.pytorch.org/whl/<backend>`
+(pick the `<backend>` index — `cpu`, `cu130`, `rocm7.0`, … — from
+<https://pytorch.org/get-started/locally/>, which lists every published version).
+A handy shortcut: an older CUDA/ROCm wheel often *is* your floor (e.g. a ROCm image
+pinned to an older Torch), so a device build there doubles as the floor test —
+and covers **both** the `.cu` (CUDA) and hipified (ROCm) toolchains, which can fail
+independently. When capturing the build to a log, check the **real** exit status —
+a redirected `tail` can hide a non-zero `setup.py`/`pip` exit, so grep the log for
+`error:|fatal error|FAILED` rather than trusting the last lines.
 
 **GPU device code (does *not* collapse with the ABI — one wheel per CUDA major +
 per GPU arch; rationale in `reference/background.md`):**
