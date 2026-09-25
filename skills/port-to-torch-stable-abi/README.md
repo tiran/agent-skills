@@ -12,6 +12,7 @@ framework-neutral Markdown; the same files drive multiple coding agents.
 | `AGENTS.md` | Cross-agent entry point (Codex and other `AGENTS.md`-aware agents). |
 | `reference/substitutions.md` | Include / type / check / method / dispatch swap tables. |
 | `reference/ports.md` | Reference-port matrix + `torch_call_dispatcher` escape hatch. |
+| `reference/torch-compile.md` | Fake/meta-kernel decision procedure for `torch.compile` (step 12). |
 | `reference/background.md` | Rationale: ABI basics, CUDA/ROCm, abi3 (the "why"). |
 
 `SKILL.md` and `AGENTS.md` point at the same `reference/` files; only `SKILL.md`
@@ -42,3 +43,9 @@ Codex reads `AGENTS.md` from the working directory upward. Either:
 
 Point the agent at `SKILL.md` and tell it to follow the steps, opening
 `reference/*.md` as cited. Nothing here depends on a specific agent framework.
+
+## Acknowledgments
+
+This skill is based on upstream stable-ABI contributions by **Sean McGovern** and
+**Chris Leonard** (Red Hat), and on **Ralf Gommers** (Quansight) for
+`torch-abi-audit`.

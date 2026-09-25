@@ -36,6 +36,12 @@ For an abi3 module also `#include <Python.h>` **first**, before any torch header
 | `C10_CUDA_CHECK` | `STD_CUDA_CHECK` |
 | `C10_CUDA_KERNEL_LAUNCH_CHECK` | `STD_CUDA_KERNEL_LAUNCH_CHECK` |
 
+`STD_CUDA_CHECK` / `STD_CUDA_KERNEL_LAUNCH_CHECK` live in
+`<torch/csrc/stable/macros.h>` and exist since the **2.10** floor — include the
+header (it expects `cuda_runtime.h` in scope) and use them directly; **don't
+hand-roll a `STD_TORCH_CHECK`-based replacement** (causal-conv1d did initially,
+then switched).
+
 ## 8. Tensor methods → stable free functions
 
 Most `tensor.method()` calls become `torch::stable::fn(tensor, …)`:
