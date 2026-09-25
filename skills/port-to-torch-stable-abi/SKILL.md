@@ -4,7 +4,7 @@ description: >-
   Port a Python package's compiled C++/CUDA/ROCm extension to the PyTorch stable
   ABI (torch::stable, STABLE_TORCH_LIBRARY, TORCH_TARGET_VERSION) so one wheel
   works across Torch versions, then assess Python abi3 (Py_LIMITED_API). Use when
-  a project ships a torch extension that is version-locked to a single Torch
+  a project ships a Torch extension that is version-locked to a single Torch
   release, or when asked to adopt the stable ABI / torch::stable / stop rebuilding
   per Torch version.
 ---
@@ -15,7 +15,7 @@ description: >-
 packaged workflow has been exercised on only a few projects. Follow it, but have a
 human review the resulting diff and build.
 
-Port a compiled torch extension from the unstable libtorch ABI to the **stable
+Port a compiled Torch extension from the unstable libtorch ABI to the **stable
 ABI**, then **assess Python abi3**. Work in the order below. Every rule comes from
 real ports (`reference/ports.md`); prefer these concrete patterns over improvising.
 
@@ -33,6 +33,8 @@ two together are the payoff, not either alone.
   swap tables (steps 5–10) and the device/stream snippet.
 - `reference/ports.md` — the reference-ports matrix + `torch_call_dispatcher`
   escape hatch for ops with no stable wrapper.
+- `reference/torch-compile.md` — the fake/meta-kernel decision procedure for
+  `torch.compile` (step 12): detect the op's case, then act.
 - `reference/background.md` — the "why" (ABI basics, CUDA/ROCm, abi3) for humans
   or when you need rationale, not steps.
 
@@ -65,8 +67,9 @@ abi3 assessment (step 17).
 > the user says otherwise: work in a project-local `.venv` with **uv** (never
 > global/user site-packages); don't delete content or commit/push without approval
 > (never straight to `main`); **ask before installing heavy packages or starting a
-> heavy compile** (torch/CUDA are multi-GB); match the project's existing style and
-> keep comments/docstrings terse.
+> heavy compile** (Torch/CUDA are multi-GB); match the project's existing style and
+> keep comments/docstrings terse. **Capitalize "Torch"** as the product name in
+> prose, comments, and commit messages (the `torch` import/package stays lowercase).
 
 ## 1. Check upstream, then inventory and classify
 
@@ -141,22 +144,32 @@ authoritative "which Torch version added this" list is
 in the pytorch tree — one `function_name: TORCH_VERSION_MAJOR_MINOR_PATCH` per
 line (e.g. `torch_from_blob: TORCH_VERSION_2_11_0`); a symbol *not* listed there
 was available before 2.10. Grep it for every shim your code calls and take the
-**max** version as your floor. Check the copy that ships with your installed torch
+**max** version as your floor. Check the copy that ships with your installed Torch
 (`python -c 'import torch,os; print(os.path.join(os.path.dirname(torch.__file__), "csrc/stable/c/shim_function_versions.txt"))'`)
 so it matches the headers you build against, not just `main`.
 
-setuptools projects usually compute the hex (`0x0MMmm00000000000`):
+setuptools projects usually compute the hex (`0x0MMmm00000000000`) from a
+`(major, minor)` tuple defined **once at module top level**, so the floor lives in
+a single place (causal-conv1d, state-spaces/mamba#1042):
 
 ```python
-STABLE_ABI_TARGET = (2, 10)
-TORCH_TARGET_VERSION = (
-    f"0x{(STABLE_ABI_TARGET[0] << 56) | (STABLE_ABI_TARGET[1] << 48):016x}"
-)
+TORCH_STABLE_ABI_MIN = (2, 10)  # the one source of truth
+TORCH_TARGET_VERSION = "0x{:02x}{:02x}000000000000".format(*TORCH_STABLE_ABI_MIN)
 ```
 
-Don't hand-pack this — the bit math is easy to get subtly wrong. Use the bundled
-helper to get (or check) the token, and to decode a value read back from
-`_C.TORCH_TARGET_VERSION`:
+**Reuse that same tuple for the runtime version pin** so the build floor and the
+install requirement can never disagree:
+
+```python
+install_requires = [
+    f"torch >= {TORCH_STABLE_ABI_MIN[0]}.{TORCH_STABLE_ABI_MIN[1]}",
+    ...,
+]
+```
+
+Don't hand-pack the hex any other way — the bit math is easy to get subtly wrong.
+Use the bundled helper to get (or check) the token, and to decode a value read back
+from `_C.TORCH_TARGET_VERSION`:
 
 ```bash
 python scripts/torch_target_version.py encode 2.10   # -> 0x020a000000000000
@@ -167,14 +180,37 @@ amd-quark passes the token `TORCH_VERSION_2_10_0` instead; either works.
 
 ## 3. Build system
 
-Add both defines to `cxx` **and** `nvcc` from **one shared list** so they can't
-drift (xformers pattern):
+Pass both defines to `cxx` **and** `nvcc`. What must not drift is the *value*
+(`TORCH_TARGET_VERSION`, from the one top-level tuple in step 2) — not the list
+object. Either splat one shared list (xformers pattern) …
 
 ```python
-stable_args = ["-DTORCH_TARGET_VERSION=" + TORCH_TARGET_VERSION, "-DTORCH_STABLE_ONLY"]
+stable_args = [f"-DTORCH_TARGET_VERSION={TORCH_TARGET_VERSION}", "-DTORCH_STABLE_ONLY"]
 extra_compile_args = {
     "cxx": ["-std=c++17", *stable_args],
     "nvcc": ["-std=c++17", *stable_args, "-DUSE_CUDA"],
+}
+```
+
+… or **repeat the two defines inline** in each list — equally safe, and often
+clearer since it shows exactly what each compiler gets (causal-conv1d, which also
+carries `-DUSE_CUDA` on both host and device — see the stream note below):
+
+```python
+extra_compile_args = {
+    "cxx": [
+        "-O3",
+        "-DUSE_CUDA",
+        f"-DTORCH_TARGET_VERSION={TORCH_TARGET_VERSION}",
+        "-DTORCH_STABLE_ONLY",
+    ],
+    "nvcc": [
+        "-O3",
+        "-DUSE_CUDA",
+        f"-DTORCH_TARGET_VERSION={TORCH_TARGET_VERSION}",
+        "-DTORCH_STABLE_ONLY",
+        ...,
+    ],
 }
 ```
 
@@ -189,16 +225,16 @@ CMake equivalent: `target_compile_definitions(${tgt} PRIVATE TORCH_TARGET_VERSIO
   masquerades as CUDA), so on ROCm the *same* condition applies: define
   `-DUSE_CUDA` **only for the stream shim**, alongside `-DUSE_ROCM=1` — not on
   every HIP source file by default.
-- Keep the build-system torch pin in sync (`pyproject.toml` / `install_requires`
+- Keep the build-system Torch pin in sync (`pyproject.toml` / `install_requires`
   → `torch >= <floor>`).
 - `-DTORCH_STABLE_ONLY` is strongly recommended (step 4) but optional; torchvision
   and amd-quark rely on discipline instead.
 
-**Do most of the port on CPU-only torch.** The stable ABI is device-agnostic, so
+**Do most of the port on CPU-only Torch.** The stable ABI is device-agnostic, so
 the mechanical rewrites (steps 5–10), the CPU build, the symbol audit (step 16),
 and the cross-Torch-version load test all work against
 `uv pip install torch --index-url https://download.pytorch.org/whl/cpu` — a few
-hundred MB, no nvcc, no GPU. Only reach for the CUDA torch + nvcc wheels (below)
+hundred MB, no nvcc, no GPU. Only reach for the CUDA Torch + nvcc wheels (below)
 when you build `.cu` device code or run GPU smoke tests. See
 [`../GUARDRAILS.md`](../GUARDRAILS.md) → *Footprint*.
 
@@ -207,10 +243,10 @@ path from `torch.version.cuda` and `torch.version.hip` (e.g.
 `if torch.version.hip: … elif torch.version.cuda: … else: CPU`). The check may live
 in `setup.py`, in `CMakeLists.txt` (an `execute_process(... import torch ...)`), or
 in `meson.build` (a `run_command(py, '-c', 'import torch; …')`) — check all three.
-On **CPU-only torch both are `None`**, so such a build silently takes the CPU path
+On **CPU-only Torch both are `None`**, so such a build silently takes the CPU path
 and skips the `.cu`/HIP sources entirely — useful for a fast CPU-path port, but it
 means the device code isn't compiled or audited. Build once against the matching
-CUDA (or ROCm) torch before you call the port done. Note also that a ROCm torch
+CUDA (or ROCm) Torch before you call the port done. Note also that a ROCm Torch
 reports `torch.version.hip` set **and** `torch.version.cuda` `None`, which is why
 the HIP branch must key off `torch.version.hip`, not the absence of CUDA.
 
@@ -218,16 +254,16 @@ the HIP branch must key off `torch.version.hip`, not the absence of CUDA.
 per GPU arch; rationale in `reference/background.md`):**
 
 - **CUDA version:** build against the **lowest minor** of a CUDA major (minor
-  compat since CUDA 11); one wheel per major. Pin the build-torch's CUDA so
+  compat since CUDA 11); one wheel per major. Pin the build-Torch's CUDA so
   `cudart` matches the user's Torch.
 - **Getting `nvcc` without a system toolkit:** the CUDA compiler and libraries are
   on PyPI as venv-local wheels — `nvidia-cuda-nvcc-cu12` (nvcc),
   `nvidia-cuda-runtime-cu12`, `nvidia-cuda-cccl-cu12` (thrust/cub headers),
   `nvidia-cuda-nvrtc-cu12`, `nvidia-cublas-cu12`, … (and a `-cu11` line) — the same
-  components torch's CUDA wheels pull in. `uv pip install nvidia-cuda-nvcc-cu12`
+  components Torch's CUDA wheels pull in. `uv pip install nvidia-cuda-nvcc-cu12`
   drops nvcc under `site-packages/nvidia/cuda_nvcc/bin/` (no sudo, no system
   install; see [`../GUARDRAILS.md`](../GUARDRAILS.md) → *Footprint*). Match the
-  CUDA major/minor to build-torch, point the build at it (`CUDACXX=…/nvidia/cuda_nvcc/bin/nvcc`
+  CUDA major/minor to build-Torch, point the build at it (`CUDACXX=…/nvidia/cuda_nvcc/bin/nvcc`
   or `CUDA_HOME`), and remember these wheels omit profilers/debuggers and a host
   C++ compiler.
 - **Arch / device code:** set `TORCH_CUDA_ARCH_LIST`, e.g. `"8.0 9.0 12.0+PTX"`.
@@ -237,7 +273,7 @@ per GPU arch; rationale in `reference/background.md`):**
   `cudart`, no arch list — nearly CUDA-major-agnostic.
 - **ROCm / HIP:** pass `-DUSE_ROCM=1 -D__HIP_PLATFORM_AMD__=1` (auto with
   `CUDAExtension`; add manually with `CppExtension`) — this is the "build against
-  ROCm torch" switch. It is *separate* from `-DUSE_CUDA`, which on ROCm gates
+  ROCm Torch" switch. It is *separate* from `-DUSE_CUDA`, which on ROCm gates
   **only** the current-stream shim (add it just for that, per step 3 above — not
   to every HIP file). Link `amdhip64`; archs via
   `PYTORCH_ROCM_ARCH` (`gfx*`) → one bundled ("fat") code object. HIP-aware
@@ -260,7 +296,7 @@ still includes them, lift the guard around **only** those includes:
 ```cpp
 // Torch < 2.13 only: pybind11/fmt ship inside torch and trip the TORCH_STABLE_ONLY
 // guard the target macro implies, though they are header-only and
-// torch-ABI-independent. 2.13+ allow-lists them, making this dance a no-op.
+// Torch-ABI-independent. 2.13+ allow-lists them, making this dance a no-op.
 // See pytorch/pytorch#174372, meta-pytorch/torchcodec#1260.
 #pragma push_macro("TORCH_STABLE_ONLY")
 #pragma push_macro("TORCH_TARGET_VERSION")
@@ -274,7 +310,7 @@ still includes them, lift the guard around **only** those includes:
 
 Apply this to **every** TU compiled with the stable defines that transitively
 includes pybind — not just the `PYBIND11_MODULE` one. An implementation `.cpp` that
-only pulls pybind in through a header (e.g. a `cocoeval.cpp` with no torch calls of
+only pulls pybind in through a header (e.g. a `cocoeval.cpp` with no Torch calls of
 its own) still trips the guard and still needs the dance.
 
 Also: `<torch/version.h>` `#error`s when `TORCH_TARGET_VERSION` is defined, so you
@@ -297,6 +333,13 @@ checks/error macros (7), tensor methods → stable free functions (8), device/st
 - **`.item()` and element indexing are gone** — read `const_data_ptr<T>()` + strides
   (also avoids a per-element GPU→CPU sync).
 - `kInt8` → `Char`, `kInt64` → `Long`; `t.dtype()` → `t.scalar_type()`.
+- **CUDA error checks:** don't hand-roll a replacement for `C10_CUDA_CHECK` /
+  `C10_CUDA_KERNEL_LAUNCH_CHECK`. Torch ships stable-ABI equivalents,
+  `STD_CUDA_CHECK(expr)` / `STD_CUDA_KERNEL_LAUNCH_CHECK()`, in
+  `<torch/csrc/stable/macros.h>` — present since the **2.10** floor (no version
+  bump), and they route through the C10 CUDA shim for proper error formatting.
+  Include that header (it expects `cuda_runtime.h`) and drop any bespoke macro
+  (causal-conv1d).
 - If a method has no stable equivalent, use the dispatcher escape hatch in
   `reference/ports.md`.
 
@@ -342,7 +385,14 @@ The stable C++ surface is forward-kernels only (torchvision is the reference):
 
 - **Autograd** → `torch.library.register_autograd("myns::op", bwd, setup_context=…)`.
 - **Autocast** → `torch.library.Library("myns", "IMPL").impl(op, fn, "AutocastCUDA")`.
-- **Fake/meta** (for `torch.compile`) → `@torch.library.register_fake("myns::op")`.
+- **Fake/meta** (for `torch.compile`) → `@torch.library.register_fake("myns::op")`,
+  **but only when the op returns tensors.** An op that returns `None` and only
+  mutates pre-allocated outputs needs no fake (causal-conv1d); one that returns
+  tensors does, or `fullgraph=True` fails (state-spaces/mamba#1042); a
+  data-dependent output shape needs `get_ctx().new_dynamic_size()`. Whichever case,
+  `mutates_args` must be complete (step 11) — an undeclared mutation silently
+  corrupts the compiled graph. Detection procedure (incl. a CPU-only empirical
+  check), upstream citations, and per-case actions: **`reference/torch-compile.md`**.
 - **Global context flags** (e.g. deterministic mode) → read in Python and pass as
   an op argument.
 
