@@ -86,6 +86,13 @@ skills need a closer human review of their results.
   and each skill's), write a PEP mention as a link to `https://peps.python.org/pep-XXXX/`
   — zero-padded, e.g. `[PEP 517](https://peps.python.org/pep-0517/)` — on first mention
   per file. `SKILL.md`/`AGENTS.md` are agent-facing and need no such linking.
+- **Acknowledge the projects and people a skill is grounded in.** When a skill leans
+  on external work — reference repos, tools, standards, authored practice — recognize
+  it: add an `## Acknowledgments` section to the skill's `README.md` and a `## Sources
+  & acknowledgments` section to its `AGENTS.md` naming the people and projects, and list
+  the grounding repos in `skills/reference-repos.md`. Preserve upstream
+  license/attribution when a skill copies or vendors anything. Acknowledge generously
+  and accurately; when the author is the repo owner, list them last.
 
 ## Pointing another project at a skill
 

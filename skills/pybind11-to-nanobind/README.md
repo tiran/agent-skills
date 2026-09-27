@@ -26,5 +26,16 @@ tests on every target platform.
 - [`port-to-torch-stable-abi`](../port-to-torch-stable-abi/) — for PyTorch
   extensions, the abi3 paths meet.
 
+## Acknowledgments
+
+This skill distills the work of many people and projects:
+
+- **Wenzel Jakob** — [`nanobind`](https://github.com/wjakob/nanobind) and
+  [`nanobind_example`](https://github.com/wjakob/nanobind_example) (nanobind plus
+  one abi3 wheel).
+- The **pybind11** maintainers.
+
+See [`../reference-repos.md`](../reference-repos.md) for the full grounding list.
+
 See the repository [`README.md`](../../README.md) for per-agent setup (Claude
 Code, Codex, others).

@@ -45,3 +45,21 @@ Importing on a free-threaded build prints no GIL-re-enable warning and
 TSan is clean (x86 and ARM); wheels carry `cp313t`/`cp314t` (or `abi3.abi3t`); the
 classifier states the level actually verified; and any out-of-scope shared-state
 findings are reported to the user rather than silently left or misdeclared as stable.
+
+## Sources & acknowledgments
+
+This skill is grounded in real projects and their maintainers — acknowledge them when
+the output leans on their work, and preserve upstream license/attribution:
+
+- **Porting guides & tooling** — **Quansight** and the **free-threading community**, for
+  the [py-free-threading](https://py-free-threading.github.io/) porting guides and
+  [`pytest-run-parallel`](https://github.com/Quansight-Labs/pytest-run-parallel).
+- **Runtime & C-API docs** — the **CPython** developers, for the
+  [free-threading HOWTOs](https://docs.python.org/3/howto/free-threading-python.html).
+- **PEP 703** — **Sam Gross** (making the GIL optional).
+- **PEP 803** — **Petr Viktorin** (`abi3t`).
+- **Adoption data** — **Hugo van Kemenade**, for the
+  [free-threaded-wheels](https://hugovk.dev/free-threaded-wheels/) adoption tracker.
+- **Real-world ports** — the **numpy**, **scipy**, and **PyO3** teams.
+
+See [`../reference-repos.md`](../reference-repos.md) for the full grounding list.

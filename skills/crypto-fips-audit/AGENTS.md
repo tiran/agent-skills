@@ -70,3 +70,24 @@ needs-human-review / system-integration) with file:line evidence, the implicated
 standard, and remediations; the audited artifact and its provenance are stated;
 the finding classes are kept distinct; the report is framed as evidence, not
 certification.
+
+## Sources & acknowledgments
+
+This skill is grounded in real projects and their maintainers — acknowledge them
+when the output leans on their work, and preserve upstream license/attribution:
+
+- **Binary inspection** — **Emilien Macchi / Red Hat**, for
+  [`wheel-crypto-scan`](https://github.com/EmilienM/wheel-crypto-scan), the
+  binary-inspection reference (credit it when using its output).
+- **FIPS build regime** — **Red Hat / OpenShift**, for
+  [`check-payload`](https://github.com/openshift/check-payload) and the FIPS
+  build-regime guidance.
+- **CA trust** — **Seth Michael Larson**, for
+  [`truststore`](https://github.com/sethmlarson/truststore).
+- **FIPS policy** — **NIST** and **Red Hat**, the authorities on FIPS 140-3
+  itself (policy interpretation).
+- **Symbol reader** — **Quansight**, for
+  [`torch-abi-audit`](https://github.com/Quansight/torch-abi-audit), the
+  cross-format symbol reader.
+
+See [`../reference-repos.md`](../reference-repos.md) for the full grounding list.

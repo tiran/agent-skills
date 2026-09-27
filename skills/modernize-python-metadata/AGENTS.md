@@ -49,3 +49,19 @@ Metadata lives in a static `[project]` table (nothing duplicated in
 SPDX license, authors, keywords, classifiers, and well-known URLs are populated;
 dependencies use floors without speculative caps; dev tooling is in
 `[dependency-groups]`; the build backend is declared (keeping setuptools is fine).
+
+## Sources & acknowledgments
+
+This skill is grounded in real projects and their maintainers — acknowledge them
+when the output leans on their work, and preserve upstream license/attribution:
+
+- **PyPA** — [Writing your pyproject.toml](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)
+  and [`pypa/sampleproject`](https://github.com/pypa/sampleproject), the reference
+  PEP 621 `[project]` table.
+- **Hynek Schlawack** — packaging-metadata practice and
+  [`hatch-fancy-pypi-readme`](https://github.com/hynek/hatch-fancy-pypi-readme).
+- **Specs** — [PEP 621](https://peps.python.org/pep-0621/),
+  [PEP 639](https://peps.python.org/pep-0639/) (SPDX license), and
+  [PEP 735](https://peps.python.org/pep-0735/) (dependency groups).
+
+See [`../reference-repos.md`](../reference-repos.md) for the full grounding list.

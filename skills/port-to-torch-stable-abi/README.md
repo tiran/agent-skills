@@ -46,6 +46,18 @@ Point the agent at `SKILL.md` and tell it to follow the steps, opening
 
 ## Acknowledgments
 
-This skill is based on upstream stable-ABI contributions by **Sean McGovern** and
-**Chris Leonard** (Red Hat), and on **Ralf Gommers** (Quansight) for
-`torch-abi-audit`.
+This skill distills the work of many people and projects:
+
+- The **PyTorch** team — the stable ABI (`torch::stable`),
+  [`pytorch/extension-cpp`](https://github.com/pytorch/extension-cpp), and
+  [`torchvision`](https://github.com/pytorch/vision) /
+  [`torchaudio`](https://github.com/pytorch/audio) as first-party users.
+- **Sean McGovern** and **Chris Leonard** (Red Hat) — upstream stable-ABI
+  contributions.
+- **Ralf Gommers** and **Quansight** —
+  [`torch-abi-audit`](https://github.com/Quansight/torch-abi-audit) (the symbol audit).
+- **Christian Heimes** ([`tiran/kvcached`](https://github.com/tiran/kvcached) port
+  work, [`pycxxfilt`](https://github.com/tiran/pycxxfilt) demangler) — the port work
+  grounding this skill.
+
+See [`../reference-repos.md`](../reference-repos.md) for the full grounding list.

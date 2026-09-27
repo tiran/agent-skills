@@ -29,5 +29,17 @@ It handles two starting points in one workflow:
 Pairs with [`port-to-torch-stable-abi`](../port-to-torch-stable-abi/) — the abi3 /
 nanobind path (SKILL step 9) is where the two skills meet.
 
+## Acknowledgments
+
+This skill distills the work of many people and projects:
+
+- **Henry Schreiner** — [`scikit-build-core`](https://github.com/scikit-build/scikit-build-core)
+  and the [`pybind/scikit_build_example`](https://github.com/pybind/scikit_build_example).
+- **Ralf Gommers** — the [`pypackaging-native`](https://pypackaging-native.github.io/)
+  guide on native-packaging tradeoffs.
+- The **pybind11** and **CMake/Ninja** communities (CMake-based builds).
+
+See [`../reference-repos.md`](../reference-repos.md) for the full grounding list.
+
 See the repository [`README.md`](../../README.md) for per-agent setup (Claude
 Code, Codex, others).
