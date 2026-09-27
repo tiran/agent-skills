@@ -152,15 +152,22 @@ change — or leave it as an extra.
 ```toml
 [build-system]
 requires = ["setuptools>=61", "Cython>=3", "numpy>=2"]   # compile-time only
-build-backend = "setuptools.build_meta"
+build-backend = "setuptools.build_meta:__legacy__"
 ```
 
 - List **only what's needed to build** (backend, Cython, header-providing
-  packages, a VCS-version tool) — not runtime deps.
+  packages, a VCS-version tool) — not runtime deps. But list **all** of it:
+  builds are isolated, so anything missing from `requires` isn't present at
+  build time.
 - By default builds are **isolated** (PEP 517): the backend and everything in
   `requires` are installed into a fresh throwaway environment. This is why
   `open("README.md").read()` and reading the version by importing the package at
   build time are fragile — the build doesn't run in your dev environment.
+- **`:__legacy__` vs plain `setuptools.build_meta`.** A compiled project keeps a
+  `setup.py`, and one with no `[build-system]` table is implicitly built with
+  `:__legacy__` (project root on `sys.path`, so `setup.py` can import a local
+  helper). Plain `setuptools.build_meta` is stricter and drops the root from
+  `sys.path` — default to `:__legacy__` while `setup.py` remains; see SKILL.md §9.
 
 ### Special case: building against a pre-installed dependency (e.g. Torch)
 
