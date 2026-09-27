@@ -109,7 +109,8 @@ Follow skills/port-to-scikit-build-core/SKILL.md to migrate this package's build
 
 ```text
 agent-skills/
-├── AGENTS.md                 # instructions for agents (CLAUDE.md symlinks to it)
+├── AGENTS.md                 # entry point for agents using skills (CLAUDE.md symlinks to it)
+├── CONTRIBUTING.md           # conventions for editing this repo / authoring skills
 ├── plugin.json               # portable Codex plugin manifest
 ├── .claude-plugin/           # Claude Code marketplace + plugin metadata
 └── skills/
@@ -135,9 +136,9 @@ projects they draw on are listed in
 ## Improving a skill
 
 Improvements to the existing skills — corrections, clearer steps, better
-references — are welcome. Conventions live in [`AGENTS.md`](AGENTS.md); each skill
-is one directory under `skills/<name>/` with a single `SKILL.md` (the workflow)
-and supporting material under `reference/`.
+references — are welcome. Conventions live in [`CONTRIBUTING.md`](CONTRIBUTING.md);
+each skill is one directory under `skills/<name>/` with a single `SKILL.md` (the
+workflow) and supporting material under `reference/`.
 
 Draft with AI if it helps, but **read it and cut it down before you commit** —
 unedited AI text is long, unchecked, and expensive to review.
