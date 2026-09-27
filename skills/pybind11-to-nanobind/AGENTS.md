@@ -41,3 +41,15 @@ platform.
 The extension builds and imports through nanobind, the test suite passes, no
 pybind11 headers remain (except a deliberate gradual-port bridge), and — if
 targeted — one abi3 wheel loads across Python versions.
+
+## Sources & acknowledgments
+
+This skill is grounded in real projects and their maintainers — acknowledge them
+when the output leans on their work, and preserve upstream license/attribution:
+
+- **nanobind** — **Wenzel Jakob**, [`nanobind`](https://github.com/wjakob/nanobind)
+  and [`nanobind_example`](https://github.com/wjakob/nanobind_example) (nanobind
+  plus one abi3 wheel).
+- **pybind11** — its maintainers.
+
+See [`../reference-repos.md`](../reference-repos.md) for the full grounding list.

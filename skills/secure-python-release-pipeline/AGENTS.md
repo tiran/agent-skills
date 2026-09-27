@@ -42,3 +42,18 @@ A tag-triggered workflow builds an sdist, builds all wheels from that sdist,
 verifies them, and publishes via a Trusted Publisher from a dedicated
 `id-token: write` job; `permissions: {}` at top level with minimal per-job
 grants; all actions SHA-pinned; no cache on release; zizmor clean.
+
+## Sources & acknowledgments
+
+This skill is grounded in real projects and their maintainers — acknowledge them when
+the output leans on their work, and preserve upstream license/attribution:
+
+- **Packaging & release:** Hynek Schlawack (`build-and-inspect-python-package`,
+  modern release practice).
+- **PyPA tooling & standards:** `gh-action-pypi-publish` (Sviatoslav Sydorenko),
+  `cibuildwheel`, and PyPI Trusted Publishers.
+- **zizmor:** William Woodruff / zizmorcore.
+- **Scorecard:** the OpenSSF.
+- **Secure-release templates:** Christian Heimes' `tiran/{zipwire,retread}`.
+
+See [`../reference-repos.md`](../reference-repos.md) for the full grounding list.

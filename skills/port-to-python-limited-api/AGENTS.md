@@ -39,3 +39,15 @@ Builds with `Py_LIMITED_API` / `Py_TARGET_ABI3T` at the chosen floor; the wheel
 carries the `abi3` (or `abi3.abi3t`) tag and the `.so` is `*.abi3.so` / `*.abi3t.so`;
 `abi3audit` finds no violations; and it imports and passes tests on every claimed
 Python version — including a free-threaded build for `abi3t`.
+
+## Sources & acknowledgments
+
+This skill is grounded in real projects and their maintainers — acknowledge them
+when the output leans on their work, and preserve upstream license/attribution:
+
+- **Tooling** — **Victor Stinner** ([`pythoncapi-compat`](https://github.com/python/pythoncapi-compat)); **Trail of Bits** and the **PyPA** ([`abi3audit`](https://github.com/pypa/abi3audit)).
+- **ABI model & write-ups** — **Quansight** ([`torch-abi-audit`](https://github.com/Quansight/torch-abi-audit) and the CPython-ABI write-ups).
+- **Free-threaded stable ABI** — **Petr Viktorin** ([PEP 803](https://peps.python.org/pep-0803/), abi3t).
+- **Worked adopters** — **psutil**, **protobuf**, **wcwidth**, and **pyca/cryptography**.
+
+See [`../reference-repos.md`](../reference-repos.md) for the full grounding list.

@@ -26,5 +26,19 @@ target platform.
 - [`pybind11-to-nanobind`](../pybind11-to-nanobind/) — nanobind bindings also
   build under Meson.
 
+## Acknowledgments
+
+This skill distills the work of many people and projects:
+
+- **Ralf Gommers** — [`meson-python`](https://github.com/mesonbuild/meson-python)
+  (the backend behind the numpy/scipy migrations).
+- The **[Meson](https://mesonbuild.com/)** build system and the
+  **[numpy](https://github.com/numpy/numpy)** / **[scipy](https://github.com/scipy/scipy)**
+  teams (proof it scales).
+- **Christian Heimes** ([`tiran/pycxxfilt`](https://github.com/tiran/pycxxfilt)) —
+  the clean small reference template.
+
+See [`../reference-repos.md`](../reference-repos.md) for the full grounding list.
+
 See the repository [`README.md`](../../README.md) for per-agent setup (Claude
 Code, Codex, others).

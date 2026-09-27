@@ -40,3 +40,20 @@ every target platform.
 `uv build` yields an installable sdist + wheel with no `setup.py`; the
 package imports and its tests pass from both wheel and sdist; editable install
 rebuilds on import; and, if targeted, one abi3 wheel loads across Python versions.
+
+## Sources & acknowledgments
+
+This skill is grounded in real projects and their maintainers — acknowledge them
+when the output leans on their work, and preserve upstream license/attribution:
+
+- **Backend** — **Ralf Gommers**,
+  [`meson-python`](https://github.com/mesonbuild/meson-python) (the backend behind
+  the numpy/scipy migrations).
+- **Scale proof** — the **[Meson](https://mesonbuild.com/)** build system and the
+  **[numpy](https://github.com/numpy/numpy)** / **[scipy](https://github.com/scipy/scipy)**
+  teams.
+- **Reference template** — **Christian Heimes**
+  ([`tiran/pycxxfilt`](https://github.com/tiran/pycxxfilt)), the clean small
+  reference template.
+
+See [`../reference-repos.md`](../reference-repos.md) for the full grounding list.

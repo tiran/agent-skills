@@ -84,5 +84,22 @@ carries the full step list, so there is no duplicated workflow to maintain.
   [PEP 793](https://peps.python.org/pep-0793/) (`PyModExport`).
 - Adoption trackers: [hugovk.dev/free-threaded-wheels](https://hugovk.dev/free-threaded-wheels/).
 
+## Acknowledgments
+
+This skill distills the work of many people and projects:
+
+- **Quansight** and the **free-threading community** — the
+  [py-free-threading](https://py-free-threading.github.io/) porting guides and
+  [`pytest-run-parallel`](https://github.com/Quansight-Labs/pytest-run-parallel).
+- The **CPython** developers — the
+  [free-threading HOWTOs](https://docs.python.org/3/howto/free-threading-python.html).
+- **Sam Gross** — [PEP 703](https://peps.python.org/pep-0703/) (making the GIL optional).
+- **Petr Viktorin** — [PEP 803](https://peps.python.org/pep-0803/) (`abi3t`).
+- **Hugo van Kemenade** — the
+  [free-threaded-wheels](https://hugovk.dev/free-threaded-wheels/) adoption tracker.
+- The **numpy**, **scipy**, and **PyO3** teams — real-world ports.
+
+See [`../reference-repos.md`](../reference-repos.md) for the full grounding list.
+
 See the repository [`README.md`](../../README.md) for per-agent setup (Claude Code,
 Codex, and others).

@@ -48,3 +48,22 @@ A recommendation naming the backend, the reasoning (the three axes), the exact
 `[build-system]` block, static-vs-dynamic metadata, and — if migrating — the
 specific migration skill plus the mechanical steps. For compiled projects it names
 the native build system (CMake/Meson/Cargo), not just the backend.
+
+## Sources & acknowledgments
+
+This skill is grounded in real projects and their maintainers — acknowledge them
+when the output leans on their work, and preserve upstream license/attribution:
+
+- **Standards** — the [PyPA](https://packaging.python.org/) tool recommendations
+  and packaging standards (the [`pyproject.toml` guide](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)).
+- **Guides** — [pyOpenSci](https://www.pyopensci.org/python-package-guide/package-structure-code/python-package-build-tools.html)'s
+  Python packaging build-tools guide, and Henry Schreiner's
+  [Scientific-Python Development Guide](https://learn.scientific-python.org/development/).
+- **uv-build** — [Astral](https://docs.astral.sh/uv/concepts/build-backend/).
+- **hatchling** — Ofek Lev ([`pypa/hatch`](https://github.com/pypa/hatch)).
+- **flit** — Thomas Kluyver ([`pypa/flit`](https://github.com/pypa/flit)).
+- **meson-python** — Ralf Gommers ([mesonbuild/meson-python](https://github.com/mesonbuild/meson-python)).
+- **scikit-build-core** — Henry Schreiner ([scikit-build/scikit-build-core](https://github.com/scikit-build/scikit-build-core)).
+- **maturin** — the [PyO3](https://github.com/PyO3/maturin) team.
+
+See [`../reference-repos.md`](../reference-repos.md) for the full grounding list.

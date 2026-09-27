@@ -94,4 +94,20 @@ primary NIST/vendor pages before relying on a verdict):
   OS trust store via an `ssl.SSLContext` drop-in (the default in pip 24.2+, Python
   3.10+); the remedy for a bundled-CA finding.
 
+## Acknowledgments
+
+This skill distills the work of many people and projects:
+
+- **Emilien Macchi / Red Hat** — [`wheel-crypto-scan`](https://github.com/EmilienM/wheel-crypto-scan),
+  the binary-inspection reference (credit it when using its output).
+- **Red Hat / OpenShift** — [`check-payload`](https://github.com/openshift/check-payload)
+  and the FIPS build-regime guidance.
+- **Seth Michael Larson** — [`truststore`](https://github.com/sethmlarson/truststore).
+- **NIST** and **Red Hat** — the authorities on FIPS 140-3 itself (policy
+  interpretation).
+- **Quansight** — [`torch-abi-audit`](https://github.com/Quansight/torch-abi-audit),
+  the cross-format symbol reader.
+
+See [`../reference-repos.md`](../reference-repos.md) for the full grounding list.
+
 See the repository [`README.md`](../../README.md) for per-agent setup.

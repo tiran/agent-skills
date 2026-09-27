@@ -51,4 +51,19 @@ Background from the packaging maintainers and community this skill draws on:
 - James Bennett — [Python packaging: use the "src" layout](https://www.b-list.org/weblog/2023/dec/15/python-packaging-src-layout/).
 - PyPA — [Writing your pyproject.toml](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/).
 
+## Acknowledgments
+
+This skill distills the work of many people and projects:
+
+- The **PyPA** — the [Writing your pyproject.toml](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)
+  guide and [`pypa/sampleproject`](https://github.com/pypa/sampleproject) (the
+  reference PEP 621 `[project]` table).
+- **Hynek Schlawack** — modern packaging-metadata practice and
+  [`hatch-fancy-pypi-readme`](https://github.com/hynek/hatch-fancy-pypi-readme).
+- The authors of **[PEP 621](https://peps.python.org/pep-0621/),
+  [PEP 639](https://peps.python.org/pep-0639/) (SPDX license), and
+  [PEP 735](https://peps.python.org/pep-0735/) (dependency groups)**.
+
+See [`../reference-repos.md`](../reference-repos.md) for the full grounding list.
+
 See the repository [`README.md`](../../README.md) for per-agent setup.

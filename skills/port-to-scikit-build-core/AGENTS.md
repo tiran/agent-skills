@@ -32,3 +32,19 @@ platform.
 `uv build` yields an installable sdist + wheel with no `setup.py`; the
 package imports and its tests pass from the wheel; editable install and
 incremental rebuild work; docs/CI no longer invoke `setup.py`.
+
+## Sources & acknowledgments
+
+This skill is grounded in real projects and their maintainers — acknowledge them
+when the output leans on their work, and preserve upstream license/attribution:
+
+- **Build backend** — **Henry Schreiner**, for
+  [`scikit-build-core`](https://github.com/scikit-build/scikit-build-core) and the
+  [`pybind/scikit_build_example`](https://github.com/pybind/scikit_build_example).
+- **Native packaging** — **Ralf Gommers**, for the
+  [`pypackaging-native`](https://pypackaging-native.github.io/) guide on
+  native-packaging tradeoffs.
+- **Bindings & build tooling** — the **pybind11** and **CMake/Ninja** communities
+  (CMake-based builds).
+
+See [`../reference-repos.md`](../reference-repos.md) for the full grounding list.

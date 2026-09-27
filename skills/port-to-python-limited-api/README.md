@@ -79,5 +79,17 @@ carries the full step list, so there is no duplicated workflow to maintain.
   (back-fills modern C API + `upgrade_pythoncapi.py`) and
   [`abi3audit`](https://github.com/pypa/abi3audit) (verifies a `.so`/wheel is abi3-clean).
 
+## Acknowledgments
+
+This skill distills the work of many people and projects:
+
+- **Victor Stinner** — [`pythoncapi-compat`](https://github.com/python/pythoncapi-compat).
+- **Trail of Bits** and the **PyPA** — [`abi3audit`](https://github.com/pypa/abi3audit).
+- **Quansight** — [`torch-abi-audit`](https://github.com/Quansight/torch-abi-audit) and the CPython-ABI write-ups.
+- **Petr Viktorin** — [PEP 803](https://peps.python.org/pep-0803/) (the free-threaded stable ABI, abi3t).
+- Worked adopters: **psutil**, **protobuf**, **wcwidth**, and **pyca/cryptography**.
+
+See [`../reference-repos.md`](../reference-repos.md) for the full grounding list.
+
 See the repository [`README.md`](../../README.md) for per-agent setup (Claude Code,
 Codex, and others).

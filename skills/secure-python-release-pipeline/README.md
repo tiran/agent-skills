@@ -42,4 +42,23 @@ let consumers verify an artifact's origin — that's the core of this pipeline.
   [`port-to-torch-stable-abi`](../port-to-torch-stable-abi/) — produce the abi3
   wheels this pipeline builds and audits.
 
+## Acknowledgments
+
+This skill distills the work of many people and projects:
+
+- **Hynek Schlawack** —
+  [`build-and-inspect-python-package`](https://github.com/hynek/build-and-inspect-python-package)
+  and modern release practice.
+- The **PyPA** —
+  [`gh-action-pypi-publish`](https://github.com/pypa/gh-action-pypi-publish)
+  (Sviatoslav Sydorenko), [`cibuildwheel`](https://github.com/pypa/cibuildwheel),
+  and [PyPI Trusted Publishers](https://docs.pypi.org/trusted-publishers/).
+- **William Woodruff / zizmorcore** —
+  [`zizmor`](https://github.com/zizmorcore/zizmor).
+- The **OpenSSF** — Scorecard.
+- **Christian Heimes** ([`tiran/zipwire`](https://github.com/tiran/zipwire),
+  [`retread`](https://github.com/tiran/retread)) — the secure-release templates.
+
+See [`../reference-repos.md`](../reference-repos.md) for the full grounding list.
+
 See the repository [`README.md`](../../README.md) for per-agent setup.
