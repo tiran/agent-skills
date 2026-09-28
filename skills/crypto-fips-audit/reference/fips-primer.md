@@ -61,7 +61,11 @@ reasons, not weakness:
   advantage." **Curve25519/Curve448** the *curves* were added to SP 800-186 (2023),
   but the **X25519/X448 key-agreement schemes remain unapproved**: absent from SP
   800-56A, and NIST **declined again in a July 2025 proposal**, deprioritizing new
-  classical key exchange in favour of the PQC transition.
+  classical key exchange in favour of the PQC transition. **Update:** in **January
+  2026** NIST decided to revise SP 800-56A to approve *x-coordinate-only* ECC key
+  agreement — but the announcement names **no curve**, so whether X25519/X448 are
+  the intended beneficiaries is unsettled. Treat them as unapproved until the
+  revision lands.
 - **BLAKE2 / BLAKE3** were never standardized. NIST ran the SHA-3 competition and
   chose **Keccak**, not BLAKE (a finalist); BLAKE2/3 came later and never went
   through a NIST process, so they appear in no FIPS 180-4 / 202 entry. (Their usual
@@ -78,7 +82,7 @@ as **actually broken** (fix everywhere).
 
 | Class | Approved | Not approved (flag in a security context) |
 |---|---|---|
-| **Hash** | SHA-2 (224/256/384/512, 512/224, 512/256) [FIPS 180-4]; SHA-3 & SHAKE128/256 [FIPS 202] | **MD5, MD4, RIPEMD-160, SM3, Whirlpool** (refused); **BLAKE2, BLAKE3** (never approved) |
+| **Hash** | SHA-2 (224/256/384/512, 512/224, 512/256) [FIPS 180-4]; SHA-3 & SHAKE128/256 [FIPS 202] | **MD5, MD4, MD5-SHA1, RIPEMD-160, SM3, Whirlpool** (refused); **BLAKE2, BLAKE3** (never approved) |
 | **Hash — special** | **SHA-1**: *restricted* — allowed for non-signature uses (HMAC, KDF) but **disallowed for digital signatures**, and phased out for all uses by **2030-12-31** | — |
 | **DRBG / RNG** | SP 800-90A: Hash_DRBG, HMAC_DRBG, CTR_DRBG | Any non-SP-800-90A PRNG (e.g. Python `random` / Mersenne Twister) for security |
 | **MAC** | HMAC (approved hash), CMAC, GMAC, KMAC | MACs on non-approved primitives (keyed BLAKE2, standalone Poly1305) |
@@ -92,8 +96,12 @@ as **actually broken** (fix everywhere).
 - **Ed25519 ≠ X25519.** Same curve family, opposite verdicts: **Ed25519
   *signatures* are approved** (FIPS 186-5, 2023); **X25519 *key agreement* is
   not** — the Curve25519 *curve* is in SP 800-186, but the X25519/X448 *schemes*
-  are absent from SP 800-56A and NIST declined to add them again in July 2025.
-  Don't blanket-flag "25519".
+  are absent from SP 800-56A and NIST declined to add them again in July 2025 (a
+  January 2026 decision to revise SP 800-56A for x-coordinate-only ECC key agreement
+  names no curve, so it stays unsettled). Don't blanket-flag "25519".
+- **`md5-sha1`** — the concatenated MD5+SHA-1 hash of the legacy TLS 1.0/1.1 PRF,
+  reachable via `hashlib.new("md5-sha1")`. Refused like MD5, and easy to miss
+  because it isn't a bare `hashlib.md5` call.
 - **SHA-1 is not MD5.** SHA-1 is *restricted* (bad for signatures/integrity, OK
   for HMAC/KDF, gone by 2030), whereas MD5 was never approved. The reference
   ruleset models this split (`refused_hash_algorithms` vs
@@ -146,11 +154,29 @@ allowed. Caveats: it must **not** be used for security purposes; a strict
 approved-only OpenSSL can reject it anyway (no non-FIPS impl to fall back to); and
 some hardened Python builds drop MD5/BLAKE modules entirely. See `python-audit.md`.
 
+**This escape hatch only covers hashes reached through `hashlib`** (i.e. through
+OpenSSL / HACL\*). A weak hash **compiled into a native extension** — its own MD5 or
+SHA-1 in a `.so` — is beyond FIPS mode's reach entirely: nothing at runtime can
+refuse it, so it silently keeps working on a FIPS host. That makes a *defined*
+weak-primitive symbol worse than a `hashlib.md5()` call, not better
+(`binary-inspection.md`, "defined vs imported").
+
 ## Post-quantum (FIPS 203/204/205)
 
 Finalized 2024-08: **FIPS 203 ML-KEM** (ex-Kyber; ML-KEM-512/768/1024), **FIPS 204
 ML-DSA** (ex-Dilithium), **FIPS 205 SLH-DSA** (ex-SPHINCS+) — all approved.
 FN-DSA/Falcon (future FIPS 206) not yet finalized.
+
+**Unvalidated PQC implementations still fail the module gate.** The algorithms are
+approved, but a bundled research/reference implementation is not a CMVP-validated
+module and doesn't route through the system provider, so it's a
+non-approved-*module* finding exactly like a pure-Python RSA — not a non-approved-
+*algorithm* one. The usual carriers: **liboqs** (Open Quantum Safe; Python `oqs`),
+**PQClean** bindings (Python/Rust `pqcrypto*`), and the pure-Rust RustCrypto crates
+(`ml-kem`/`ml-dsa`/`slh-dsa`, `fips203`/`204`/`205`). liboqs's own docs call it
+prototyping-only, so finding it in a shipped artifact warrants a hard look
+regardless of FIPS. On RHEL the validated PQC path is the **system OpenSSL 3.5 FIPS
+provider** (RHEL 10), not a vendored copy.
 
 **`X25519MLKEM768` hybrid** (X25519 + ML-KEM-768) dominates real TLS deployment
 (Chrome/Firefox/OpenSSL 3.5/Go 1.24). Its FIPS status is **genuinely disputed**:

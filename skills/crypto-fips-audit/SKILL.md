@@ -258,18 +258,34 @@ then triage its JSONL:
 
 ```bash
 uvx wheel-crypto-scan scan dist/*.whl -o index.jsonl        # or: uv tool install wheel-crypto-scan
+uvx wheel-crypto-scan scan dist/ --jobs 8 -o index.jsonl    # many wheels, in parallel
+uvx wheel-crypto-scan scan --index-url https://pypi.org/simple/ foo -o index.jsonl  # bulk from an index
+uvx wheel-crypto-scan scan dist/*.whl --format html -o report.html  # DataTables report for a human hand-off
+uvx wheel-crypto-scan rules                                  # print the encoded ruleset (study it, step "Reference scanner")
+uvx wheel-crypto-scan schema                                 # JSON Schema for the records below (authoritative field names)
 # Per-wheel crypto inventory (families + libraries with linkage) — use case 1:
 jq -r '.wheel.filename, (.crypto.families[]?), (.crypto.libraries[]? | "  \(.name): \(.linkage)")' index.jsonl
+# Triage by the record's own verdict class (maps onto step 8's finding classes) and findings:
+jq -r 'select(.verdict.needs_human_review) | .wheel.filename' index.jsonl
+jq -r '. as $w | .verdict.classes[]? | "\($w.wheel.filename)\t\(.)"' index.jsonl   # NON_APPROVED_CRYPTO / CONTEXT_DEPENDENT / …
+jq -r '.wheel.filename as $f | .findings[]? | "\($f)\t\(.rule_id)\t\(.verdict)\t\(.basis|join(","))"' index.jsonl  # rule + NIST basis
 # Any library carrying its own crypto (conditions are keyed <library>_linkage: openssl, nss, gnutls, …):
 jq -r 'select(any(.verdict.conditions|to_entries[]; (.key|endswith("_linkage")) and (.value|IN("bundled","static","mixed")))) | .wheel.filename' index.jsonl
-jq -r 'select(.verdict.needs_human_review) | .wheel.filename' index.jsonl
 ```
 
-The tool now emits a top-level `crypto` inventory (families + per-library linkage)
-and cites the NIST standard behind each finding — read the inventory for use case 1,
-the `verdict`/`findings` for 2–3. Its output is **FIPS *compatibility* evidence**;
-deciding **FIPS *compliance*** for a deployment stays a human call (same split this
-skill draws).
+The record carries a top-level `crypto` inventory (families + per-library linkage), a
+`verdict` (`class`/`classes` + `conditions` + `needs_human_review`), and a `findings[]`
+array citing the NIST `basis` behind each — read the inventory for use case 1, the
+`verdict`/`findings` for 2–3 (`schema` prints the exact fields). Output is **FIPS
+*compatibility* evidence**; deciding **FIPS *compliance*** for a deployment stays a
+human call (same split this skill draws). Add `--resume`/cache for large runs.
+
+> **A clean scan is not "no weak crypto."** wheel-crypto-scan is scoped to
+> **inventory + FIPS**; it defers most **class-3 insecure *use*** (AES-ECB, RSA
+> PKCS#1 v1.5, static IV/nonce, timing-unsafe compares, HTTP-client `verify=False`,
+> legacy 3DES/RC4) to a source linter. So a clean scan does **not** clear the
+> weak-crypto lens — still run the step-3 linter (`ruff --select S` / `semgrep
+> p/crypto`) and the manual checks. Read its `--format html` report for the hand-off.
 
 For **Go binaries or a whole container image/payload** — which wheel-crypto-scan
 doesn't cover — run Red Hat's

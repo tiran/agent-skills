@@ -101,7 +101,11 @@ readelf -d libfoo.so | grep -Ei 'libcurl|libpq|libmysqlclient|libmariadb|libzmq|
   copy compiled in; **imported** (`U`) means it calls an external copy it doesn't
   ship → **unknown**. Read `.symtab` for definitions even when `.dynsym` is present
   (a version script can hide a static copy from `.dynsym` — e.g. `cryptography`
-  50.0.1 has 776 local `EVP_*` defs).
+  50.0.1 has 776 local `EVP_*` defs). A **defined *weak* primitive** — the wheel's
+  own MD5/SHA-1/X25519 (`md5_init`/`MD5_*`, `SHA1_*`, `curve25519_*`/`x25519_*`) — is
+  worse than the `hashlib` case, not better: a compiled-in implementation is beyond
+  FIPS mode's reach, so nothing at runtime can refuse it, whereas `hashlib.md5()` at
+  least raises on a distro FIPS host (`fips-primer.md`, `usedforsecurity`).
 - **Banner needs a copy marker:** treat an `OpenSSL x.y.z` banner as a real
   compiled-in copy **only** when the **`OPENSSLDIR: `** string is also present
   (`OpenSSL_version()` emits both together; a header macro emits only the banner).
@@ -111,8 +115,12 @@ OpenSSL markers to grep: prefixes `EVP_`, `SSL_CTX_`, `OSSL_PROVIDER_`,
 `X509_STORE_`, `PKCS5_PBKDF2_`, `RSA_`, `EC_KEY_`, `BN_`; exact `OPENSSL_init_ssl`,
 `RAND_bytes`, `HMAC_Init_ex`. Fork tells: BoringSSL `OPENSSL_is_boringssl`,
 `BORINGSSL_*`; AWS-LC `OPENSSL_IS_AWSLC`, `AWSLC_VERSION_NUMBER_STRING`. FIPS
-BoringCrypto: **`BORINGSSL_integrity_test`** (defined) is the power-on self-test —
-match it only as a *defined* symbol.
+lineage: **`BORINGSSL_integrity_test`** (defined) is the power-on self-test — match
+it only as a *defined* symbol. **It names the module, not the fork:** it's shared by
+Go's BoringCrypto *and* AWS-LC's FIPS module (AWS-LC is a BoringSSL fork), so it only
+says "a FIPS build of the BoringSSL lineage" — use the fork's own strings
+(`BoringSSL`/`boringcrypto` vs `AWS-LC`) to say which. Don't label it BoringCrypto on
+this symbol alone.
 
 ### Provider markers — all validated system providers
 
@@ -177,7 +185,8 @@ strings -a ./bin | grep -Ei 'OPENSSL_IS_AWSLC|AWSLC_VERSION|BoringSSL|/ring-[0-9
 |---|---|
 | `ring` | `ring_*` / `GFp_*` symbols; no OpenSSL/AWSLC banner |
 | `aws-lc-rs` (`aws-lc-sys`) | `OPENSSL_IS_AWSLC`, `AWSLC_VERSION_NUMBER_STRING` (strings beat symbols under `BORINGSSL_PREFIX`) |
-| `openssl-sys` | OpenSSL banner + symbols; **`vendored` feature → static bundle**, else system → **unknown** without more evidence |
+| `aws-lc-rs` **fips** (`aws-lc-fips-sys`) | **`aws_lc_fips_*`-prefixed symbols** (~2118 vs 0 in stock), or the string **`AWS-LC FIPS <version>`** (stock: `AWS-LC <version>`). The FIPS version string lives in **`.text`** → survives stripping. Same `aws-lc-rs` cargo path as stock, so the crate name can't decide it. Still a bundled static copy — this only says it's the *validated* build |
+| `openssl-sys` | OpenSSL banner + symbols; **`vendored` feature → static bundle**, else system → **unknown** without more evidence. `openssl-src` in the tree = build-script vendored OpenSSL, but it leaves no panic-location path — treat as a hint, corroborate with symbols/strings |
 
 wheel-crypto-scan infers crate name+version from **cargo source paths** embedded in
 panic locations (`.../<crate>-<version>/src/…`, `cargo vendor`, git checkouts) —
@@ -208,9 +217,11 @@ unzip -l pkg-*.whl | grep -iE 'sbom|\.cdx\.|bom'      # e.g. *.dist-info/sboms/*
 ```
 
 wheel-crypto-scan folds a shipped SBOM into its linkage decision (purl-aware:
-`pkg:cargo/…` reads as the crate). Caveat: the SBOM says a crate is *present*, not
-which physical copy of a C library it binds — still often **unknown** for
-`openssl-sys` until symbols/strings corroborate.
+`pkg:cargo/…` reads as the crate). It also lets one component correct another — an
+`aws-lc-fips-sys` in the same SBOM drops the non-approved finding a bare `aws-lc-rs`
+would otherwise raise. Caveat: the SBOM says a crate is *present*, not which physical
+copy of a C library it binds — still often **unknown** for `openssl-sys` until
+symbols/strings corroborate.
 
 ## Limitations — be explicit in the report
 
