@@ -97,7 +97,8 @@ wheel-crypto-scan (see `binary-inspection.md` → "Related tooling").
 A statically linked or vendored crypto library is a **different binary** than the
 validated one, so it inherits **no certificate** — even if the algorithm is
 approved and the version number matches. This is the core reason to flag static/
-vendored OpenSSL, bundled libsodium, vendored BoringSSL, `ring`, etc. Embedding a
+vendored OpenSSL, bundled libsodium, vendored BoringSSL, `ring`, liboqs/PQClean PQC
+code, etc. Embedding a
 validated module lets you claim only that the product *utilizes* it, not that the
 product is validated. It also can't honor `/etc/crypto-policies`.
 
@@ -185,11 +186,33 @@ reference for it:
 - **`openssl-sys` `vendored` feature** compiles and statically links a bundled (non-
   validated) OpenSSL — set **`OPENSSL_NO_VENDOR=1`** to force system OpenSSL. Flag
   `vendored`/`vendored-openssl` anywhere in the tree.
+- **`openssl-src` is a hint, not proof.** It's the crate `openssl-sys` pulls in for
+  `vendored`, and it builds OpenSSL from source in a *build script* — so it links a
+  static copy but leaves **no** panic-location path in the artifact. Its name (in
+  `Cargo.toml`/SBOM) means a static OpenSSL is *likely*; confirm with symbols/strings
+  before calling it static, and don't treat its absence as evidence of system linkage.
+- **Pure-Rust primitive crates are outside the validated module even when the
+  algorithm is approved.** Beyond the TLS stacks above, the RustCrypto family
+  compiles primitives straight into the extension: `sha2`/`sha3`/`hmac`/`pbkdf2` and
+  `p256` are *approved algorithms, unvalidated impl* (review by use); `sha1`/`sha-1`/
+  `sha1_smol` (SHA-1, restricted), `md5`/`md-5`, `curve25519-dalek`/`x25519-dalek`
+  (X25519 KEX), `ed25519-dalek`, `k256` (secp256k1, blockchain-restricted),
+  `rand_chacha` (non-DRBG), and the PQC crates `ml-kem`/`ml-dsa`/`slh-dsa`/`fips203`/
+  `fips204`/`fips205`/`pqcrypto-*` are non-approved outright. A pure-Rust `sha2`
+  welded into a `.so` answers to no system provider.
 - **Doubled sys crates** — a FIPS build can drag in both `aws-lc-sys` and
   `aws-lc-fips-sys` (rustls-webpki feature gap); verify only the FIPS one links.
 - **Symbol prefixing** — AWS-LC built with `BORINGSSL_PREFIX` renames symbols (not
   the file); trust the `OPENSSL_IS_AWSLC`/`AWSLC_VERSION` **strings** over symbol
-  names.
+  names. **Telling the FIPS build from the stock one:** `aws-lc-rs` links
+  `aws-lc-sys` (non-FIPS) by default and `aws-lc-fips-sys` (validated) only with the
+  `fips` feature, and *both leave the same `aws-lc-rs` cargo path* — so the crate
+  name can't decide it. The distinguishers: `nm` showing **`aws_lc_fips_*`-prefixed
+  symbols** (measured ~2118 in a FIPS build vs 0 in stock), or `strings` finding
+  **`AWS-LC FIPS <version>`** (stock spells it `AWS-LC <version>`). The FIPS version
+  string lives in **`.text`**, so it survives stripping even once the symbol prefix
+  is gone. Either way it's still a bundled static copy (CONDITIONAL) — this only tells
+  you *whether the bundled copy is the validated build*.
 - **rustls can't inherit `/etc/crypto-policies`** — even a FIPS rustls won't honor
   system policy the way OpenSSL-based apps do.
 - **Test-only deps are a false-positive trap.** A crate under
@@ -198,6 +221,11 @@ reference for it:
   confirm it's a real `[dependencies]`/`[build-dependencies]` entry **and** that it
   appears in the built artifact (its symbols/strings, or the embedded SBOM — see
   `binary-inspection.md`). Don't flag from `Cargo.lock` alone.
+- **Worked example — `qh3`** (QUIC/HTTP-3 for `niquests`/`urllib3-future`): a Rust
+  wheel that ships `aws-lc-rs` **without** the `fips` feature (so the non-FIPS
+  `aws-lc-sys`), `rustls`, and RustCrypto `rsa`/`dsa`/`ed25519-dalek`/`sha1` all
+  compiled in — a textbook bundled non-validated module reached from ordinary Python
+  code. See `python-audit.md` → HTTP clients.
 
 ## CA trust store (system-integration class, not FIPS-140 algorithm)
 

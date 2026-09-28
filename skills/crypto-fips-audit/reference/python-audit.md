@@ -39,11 +39,22 @@ FIPS issues linked inline.
 ### ssl
 
 - Follows OpenSSL, which on RHEL/Fedora is wired to `/etc/crypto-policies`.
-  **`ssl.create_default_context()` is the compliant path** (inherits system
-  policy). Flag as policy overrides (system-integration class, SKILL step 7):
-  `ctx.set_ciphers("…")`, pinning `minimum_version`/`maximum_version` to a fixed
-  `TLSVersion`, deprecated `OP_NO_TLS*` / `PROTOCOL_TLSv1_2`, or a bare
-  `SSLContext(...)` with manual cipher/version tightening.
+  **A bare `ssl.create_default_context()` is the compliant path** (inherits system
+  policy *and* the OS trust store) — don't flag it on its own. Flag as policy
+  overrides (system-integration class, SKILL step 7): `ctx.set_ciphers("…")`, pinning
+  `minimum_version`/`maximum_version` to a fixed `TLSVersion`, deprecated
+  `OP_NO_TLS*` / `PROTOCOL_TLSv1_2`, or a bare `SSLContext(...)` with manual
+  cipher/version tightening.
+- **`create_default_context()` becomes a finding only when it's passed `cafile=`,
+  `capath=`, or `cadata=`** — those replace the OS trust store with a caller-supplied
+  bundle, the same trust-store bypass as `certifi` (trust / system-integration class,
+  not the cipher/policy class). A corporate/internal CA added to the system is then
+  ignored and revocations don't propagate. Same for a later
+  `ctx.load_verify_locations(…)`. The **`purpose=`** argument
+  (`ssl.Purpose.SERVER_AUTH`/`CLIENT_AUTH`) only selects the context's intended use
+  and is **fine** — don't flag it. Remediation for the trust override: leave trust to
+  the system, or use [`truststore`](https://github.com/sethmlarson/truststore) (see
+  `native-crypto.md`).
 - **Disabled certificate validation is a *weak-crypto* finding, not a policy one**
   (CWE-295): `verify=False` (`requests`/`httpx`), `ssl.CERT_NONE`,
   `check_hostname=False`, `ssl._create_unverified_context()` /
@@ -61,14 +72,46 @@ The stdlib `ssl` defaults are safe, but libraries layered on top often **build o
 replace the `SSLContext`** with their own settings, and several **don't inherit
 `/etc/crypto-policies`**. Audit those overrides, not the mere use:
 
-- **HTTP clients** — `requests`, `urllib3`, `httpx`, `aiohttp`, `pycurl`, and
-  friends each let a caller pass a custom `ssl_context`/`SSLContext` or disable
-  verification. Flag `verify=False` (`requests`/`httpx`), `urllib3`
-  `cert_reqs='CERT_NONE'` / `assert_hostname=False` / `InsecureRequestWarning`
-  suppression, `aiohttp` `ssl=False` / `TCPConnector(ssl=...)` /
-  `verify_ssl=False`, and any hand-built context that sets `check_hostname=False`
-  or `CERT_NONE` or pins ciphers/versions. Prefer `ssl.create_default_context()`
-  and leave policy to the system. (CWE-295; also Bandit **B501**.)
+- **HTTP clients** — `requests`, stdlib `urllib`, `urllib3`, `httpx`, `aiohttp`,
+  `pycurl`, `niquests`, and friends each let a caller disable verification, swap the
+  CA/trust store, or hand in a custom context. A plain call is fine; flag the **overrides**
+  below, and keep the three columns in different classes — **disabling verification**
+  is weak-crypto (CWE-295), **swapping the CA store** is trust / system-integration,
+  **pinning ciphers/versions** is a crypto-policy override. Prefer a bare
+  `ssl.create_default_context()` and leave policy and trust to the system.
+  (CWE-295; Bandit **B501-B504**.)
+
+  | Library | Disable verification | Override CA / trust store | Custom context · ciphers · TLS version |
+  |---|---|---|---|
+  | **requests** | `verify=False` (call or `session.verify`) | `verify="ca.pem"`; env `REQUESTS_CA_BUNDLE`/`CURL_CA_BUNDLE` | custom `HTTPAdapter` with `ssl_context=` (via `urllib3`) |
+  | **urllib** (stdlib) | `context=ssl._create_unverified_context()`; `ssl._create_default_https_context = ssl._create_unverified_context` | `urlopen(..., cafile=/capath=/cadata=)` (deprecated → prefer `context=`) | `urlopen(url, context=<SSLContext>)` |
+  | **urllib3** | `cert_reqs="CERT_NONE"` + `assert_hostname=False`; `disable_warnings(InsecureRequestWarning)` | `ca_certs=`, `ca_cert_dir=` | `ssl_context=`; `ssl_version`/`ssl_minimum_version`/`ssl_maximum_version`; `ciphers=` |
+  | **httpx** | `verify=False` (client or request) | `verify="ca.pem"` | `verify=<ssl.SSLContext>` (newer httpx: pass a prebuilt context) |
+  | **aiohttp** | `TCPConnector(ssl=False)`; legacy `verify_ssl=False`/`ssl=False` on a request | `TCPConnector(ssl=ctx)` where `ctx` loaded a custom CA | `TCPConnector(ssl=<SSLContext>)`; `fingerprint=` (cert pinning) |
+  | **pycurl** | `SSL_VERIFYPEER=0`, `SSL_VERIFYHOST=0` | `CAINFO=`, `CAPATH=` | `SSL_CIPHER_LIST=`, `SSLVERSION=` |
+  | **niquests** (drop-in `requests` fork; HTTP/2+3) | `verify=False` (call or `session.verify`) | `verify="ca.pem"` (defaults to the **OS trust store** via `wassima`, not `certifi`) | custom `HTTPAdapter`/`ssl_context=` (via `urllib3-future`); **HTTP/3 path routes crypto through `qh3` — see below** |
+
+  (There is no `httpx2` package — `httpx` is current; `httpcore` is its transport
+  layer and takes the same `ssl_context`.) The same three-way split applies to
+  non-HTTP clients that expose TLS kwargs — `boto3`/`botocore` `verify=`,
+  `elasticsearch` `ca_certs=`/`verify_certs=`, `kafka-python` `ssl_cafile=`,
+  `tornado` `ssl_options=`, `websockets` `ssl=` — audit the override, not the use.
+- **niquests (drop-in `requests` replacement) and its HTTP/3 path pull in a bundled,
+  non-validated crypto stack.** For plain HTTP/1.1 and HTTP/2 over TCP, niquests (via
+  `urllib3-future`) uses the stdlib `ssl`/OpenSSL — the system provider, same posture
+  as requests — and it actually *improves* trust by defaulting to the **OS trust store
+  via [`wassima`](https://github.com/jawah/wassima)** instead of `certifi`. **But its
+  HTTP/3 (QUIC) path — and post-handshake OCSP — route TLS through
+  [`qh3`](https://github.com/jawah/qh3)**, a Rust extension that **statically bundles
+  its own crypto**: `aws-lc-rs` **without the `fips` feature** (default provider for
+  `rustls`), plus RustCrypto `rsa` (Marvin/RUSTSEC-2023-0071 timing history), `dsa`
+  (removed in FIPS 186-5), `ed25519-dalek`, and `sha1`. That is a **non-validated
+  module** (FIPS-140 class) that also **bypasses `/etc/crypto-policies`** — a QUIC
+  handshake never touches system OpenSSL. So: a niquests wheel using only h1/h2 is a
+  requests-equivalent, but **`qh3` present + HTTP/3 or OCSP enabled is a finding** (also
+  the Rust-crate concerns in `native-crypto.md`). Confirm the bundled `aws-lc` in the
+  `qh3` wheel via `binary-inspection.md`. Detect: a `qh3` dependency (directly or via
+  `urllib3.future[qh3]` / the niquests `http3`/`ocsp` extras).
 - **paramiko (SSH)** is **not** a validated module and does **not** consult
   `/etc/crypto-policies` (it drives `cryptography` directly, not the system SSH
   stack). By default it offers **curve25519-sha256** (X25519 KEX — not
@@ -175,12 +218,16 @@ system OpenSSL/FIPS provider (check the artifact — `binary-inspection.md`);
 | **pycryptodome** | self-contained crypto | Python + **C** | Yes (self-contained) | NON-APPROVED | Not an OpenSSL wrapper; `Crypto.*` |
 | **pycryptodomex** | same as above | same | Yes | NON-APPROVED | `Cryptodome.*` namespace |
 | **pynacl** | libsodium primitives | CFFI over libsodium | **bundles libsodium** (`SODIUM_INSTALL=system` to override) | NON-APPROVED | Bundled → outside any validated module |
+| **qh3** | QUIC / HTTP-3 TLS (rustls) | **Rust** (PyO3) | **yes — static `aws-lc-rs` (no `fips`) + RustCrypto `rsa`/`dsa`/`ed25519`/`sha1`** | NON-APPROVED | Bundled non-validated module; bypasses `/etc/crypto-policies`. Pulled by `niquests`/`urllib3-future` for HTTP/3 + OCSP. Confirm aws-lc in the wheel (`binary-inspection.md`) |
+| **niquests** | drop-in `requests` fork (HTTP/1.1/2/3) | Python over `urllib3-future` | h1/h2: **no** (stdlib `ssl`); h3/OCSP: via **`qh3`** | CONDITIONAL | h1/h2 over TCP = system OpenSSL (requests-equivalent; OS trust via `wassima`, not certifi). **HTTP/3 or OCSP → `qh3` bundled crypto** = finding |
 | **pyOpenSSL** | TLS/X.509 wrapper | wraps **`cryptography`** | inherits cryptography's OpenSSL | CONDITIONAL | Posture = whatever `cryptography` build is installed |
 | **m2crypto** | crypto + SSL | **SWIG over OpenSSL** | usually system OpenSSL | CONDITIONAL | Maintenance mode; verify the linked binary |
 | **murmurhash** | MurmurHash2 (non-crypto) | Cython | Yes | CONTEXT | ML feature hashing; almost never security |
 | **rsa** | RSA | **pure Python** | n/a | NON-APPROVED | Unvalidated + outside provider; project archived; timing-attack caveats |
 | **xxhash** | xxHash (non-crypto) | C (bundled; system via `XXHASH_LINK_SO`) | Yes | CONTEXT | Upstream: not cryptographic; do not use for HMAC |
 | **mmh3** | MurmurHash3 (non-crypto) | C/C++ | Yes | CONTEXT | Same class as murmurhash/xxhash |
+| **oqs** (liboqs) | PQC KEM + signatures (ML-KEM/ML-DSA/SLH-DSA) | binds/bundles **liboqs** (C) | Yes | NON-APPROVED | Approved algorithms, but liboqs is a research/prototyping lib, not a validated module; outside the system provider |
+| **pqcrypto** | PQC KEM + signatures (PQClean) | C bindings (PQClean) | Yes | NON-APPROVED | Approved algorithms, unvalidated PQClean impl outside any module |
 | **certifi** | CA trust bundle | Mozilla roots in a package | n/a | SYSTEM-INTEGRATION | Bypasses OS trust store; see `native-crypto.md` |
 
 ### The good / system-backed choices
@@ -200,9 +247,9 @@ artifact; don't judge by package name.**
 
 ### The non-crypto hashes (CONTEXT only)
 
-`xxhash`, `murmurhash`, `mmh3`, `blake3`, and BLAKE2 libraries are not approved but
-are overwhelmingly checksums, dedup, hash tables, ML feature hashing, and content
-addressing. **Presence alone is not a finding** — decide by *use*: only flag when
+`xxhash`, `murmurhash`, `mmh3`, `crc32c`, `cityhash`, `farmhash`, `blake3`, and
+BLAKE2 libraries are not approved but are overwhelmingly checksums, dedup, hash
+tables, ML feature hashing, and content addressing. **Presence alone is not a finding** — decide by *use*: only flag when
 the value feeds a security decision (integrity of a signed artifact, token/nonce
 derivation, password handling).
 
@@ -217,6 +264,9 @@ grep -REn 'ctypes.*(CDLL|find_library).*(crypto|ssl|sodium|nacl|gcrypt)' .
 # Native client libs that pull crypto in under the hood — check linkage + config, not mere use:
 grep -REn 'import (pycurl|psycopg2|psycopg|MySQLdb|pymssql|pyodbc|zmq|grpc|gssapi|kerberos|ldap)\b' .
 grep -REn 'sslmode|sslrootcert|ssl_ca|CURLOPT_SSL|set_ciphers|CURVE_|enctype|ssl\.cipher' .  # config overrides in those libs
+# niquests/qh3: HTTP-3 (QUIC) + OCSP pull a bundled non-FIPS Rust crypto stack (aws-lc-rs w/o fips):
+grep -REn 'import (niquests|qh3)\b|from (niquests|qh3)\b|urllib3\.future|urllib3_future|wassima' .
+grep -REn '\bqh3\b|\[http3\]|\[qh3\]|HTTP/3|http_version|force_http3|disable_http3' pyproject.toml setup.py setup.cfg requirements*.txt . 2>/dev/null
 grep -REn 'certifi|webpki|rustls-native-certs' .
 # Insecure use of an approved primitive (weak crypto — independent of FIPS):
 grep -REn 'modes\.ECB|MODE_ECB' .                        # AES-ECB leaks structure
@@ -227,6 +277,9 @@ grep -REn 'key_size\s*=\s*(512|768|1024)' .              # weak RSA/DSA key (SP 
 grep -REn '\b(DES|TripleDES|ARC4|ARC2|Blowfish|IDEA|CAST5|SEED|XOR)\b' .  # broken/legacy ciphers
 # TLS/PKI validation disabled (CWE-295):
 grep -REn 'verify\s*=\s*False|CERT_NONE|check_hostname\s*=\s*False|_create_unverified_context|wrap_socket' .
+grep -REn 'cert_reqs\s*=\s*.CERT_NONE|assert_hostname\s*=\s*False|SSL_VERIFYPEER|SSL_VERIFYHOST|verify_ssl\s*=\s*False|disable_warnings|InsecureRequestWarning' .
+# CA / trust-store overrides (system-integration class — swaps the OS trust store):
+grep -REn 'cafile\s*=|capath\s*=|cadata\s*=|ca_certs\s*=|ca_cert_dir\s*=|CAINFO|CAPATH|REQUESTS_CA_BUNDLE|CURL_CA_BUNDLE|load_verify_locations' .
 grep -REn 'AutoAddPolicy|WarningPolicy' .                # paramiko SSH host-key not verified
 # Timing-unsafe secret comparison — use hmac.compare_digest:
 grep -REn '\b(mac|hmac|sig|signature|digest|token)\b.*[!=]=|[!=]=.*\b(mac|hmac|sig|signature|digest|token)\b' .
