@@ -9,9 +9,9 @@ others well too.
 
 | Repo | Backend | Worth studying for |
 | --- | --- | --- |
-| [`tiran/pycxxfilt`](https://github.com/tiran/pycxxfilt) | meson-python | Compiled C++ extension via Meson, VCS versioning (`vcs-versioning`), full CI + `scorecard` + `codeql`. Template for `port-to-meson-python`. Also a cross-ABI C++ symbol de-mangler (Itanium + MSVC + Rust) — used in the `port-to-torch-stable-abi` symbol audit. |
-| [`tiran/zipwire`](https://github.com/tiran/zipwire) | hatchling + hatch-vcs | Pure-Python packaging, tag-triggered `release.yml` with Trusted Publisher. Template for `secure-python-release-pipeline`. |
-| [`tiran/retread`](https://github.com/tiran/retread) | hatchling + hatch-vcs | Same secure-release shape as zipwire; a second worked example. |
+| [`tiran/pycxxfilt`](https://github.com/tiran/pycxxfilt) | meson-python | Compiled C++ extension via Meson, VCS versioning (`vcs-versioning`), full CI + `scorecard` + `codeql`. Template for `port-to-meson-python`. Also a cross-ABI C++ symbol de-mangler (Itanium + MSVC + Rust) — used in the `port-to-torch-stable-abi` symbol audit. The compiled house-style reference for `bootstrap-python-project` (meson-python, `ty`, cibuildwheel split-build `build.yml`, abi3 + free-threaded wheels, `.clang-format`). |
+| [`tiran/zipwire`](https://github.com/tiran/zipwire) | hatchling + hatch-vcs | Pure-Python packaging, tag-triggered `release.yml` with Trusted Publisher. Template for `secure-python-release-pipeline`. The pure-Python house-style reference for `bootstrap-python-project` (src/ layout, tox+tox-uv+tox-gh, ruff, py.typed, PEP 735 groups, Sphinx docs). |
+| [`tiran/retread`](https://github.com/tiran/retread) | hatchling + hatch-vcs | Same secure-release shape as zipwire; a second worked example. CLI-application variant for `bootstrap-python-project` (`[project.scripts]`, no docs). |
 | [`tiran/kvcached`](https://github.com/tiran/kvcached) (fork) | setuptools + C++/CUDA | My stable-ABI port work on kvcached, upstream at [`ovg-project/kvcached`](https://github.com/ovg-project/kvcached). Basis for `port-to-torch-stable-abi`. |
 | [`Quansight/torch-abi-audit`](https://github.com/Quansight/torch-abi-audit) | — | Cross-format, pure-Python object-file symbol reader (`objectfile.py`): defined vs undefined symbols from ELF / Mach-O / PE via pyelftools/macholib/pefile, dispatched by file magic — reads any arch/OS from one host, no native toolchain. Reference for `crypto-fips-audit`'s binary-inspection reader and the `port-to-torch-stable-abi` symbol audit. |
 
@@ -27,6 +27,7 @@ metadata and release guidance here.
 | [`hynek/structlog`](https://github.com/hynek/structlog) | Same house style; dependency groups, nox/tox sessions. |
 | [`hynek/hatch-fancy-pypi-readme`](https://github.com/hynek/hatch-fancy-pypi-readme) | Hatchling metadata plugin — composing a PyPI readme from fragments. |
 | [`hynek/argon2-cffi`](https://github.com/hynek/argon2-cffi) | cffi-based compiled binding done cleanly. |
+| [`hynek/build-and-inspect-python-package`](https://github.com/hynek/build-and-inspect-python-package) | The `@v3` CI action that builds sdist+wheel reproducibly, runs check-wheel-contents + `twine check`, prints package trees, and uploads a `Packages` artifact (optionally attesting provenance). The `build-package` step in `bootstrap-python-project` / `secure-python-release-pipeline`; also emits `supported_python_classifiers_json_array` to drive the test matrix. |
 
 Key posts: *Sharing Your Labor of Love* (PyPI), *Semantic Versioning Will Not
 Save You*, *Python Application Dependency Management*.
@@ -67,6 +68,29 @@ templates are the modern reference for anything beyond pure-Python.
 Explainers/authorities (fewer template-style repos, essential background): **Brett
 Cannon** — PEP 517/518 co-author, the [snarky.ca](https://snarky.ca/) packaging
 posts, `python-launcher`.
+
+## Project bootstrapping & templates
+
+Grounding for [`bootstrap-python-project`](bootstrap-python-project/SKILL.md). The
+house style is the `tiran/*` repos above; these are the **deterministic template
+tools** and ready-made scaffolds to reach for when bootstrapping more than one
+project.
+
+| Tool | Worth studying for |
+| --- | --- |
+| [`copier`](https://copier.readthedocs.io/) | The recommended template engine: YAML `copier.yml`, Jinja templates, and — uniquely — **`copier update`** to re-apply later template changes to already-generated repos via a tracked `.copier-answers.yml`. Use to turn this skill's output into a maintainable fleet template. |
+| [`cookiecutter`](https://github.com/cookiecutter/cookiecutter) / [`cruft`](https://github.com/cruft/cruft) | The older, larger-ecosystem generator (`cookiecutter.json`); simple but **no native update** — `cruft` bolts one on as a wrapper. Prefer copier for anything maintained. |
+| [`scientific-python/cookie`](https://github.com/scientific-python/cookie) (Schreiner) | **Recommended ready-made scaffold** — one copier template across 10 backends (pure-Python + compiled), emits a hardened project that passes `sp-repo-review` by construction. Also under *Scientific-Python packaging*. |
+| [`astral-sh/uv`](https://docs.astral.sh/uv/) `uv init` / [`pypa/hatch`](https://github.com/pypa/hatch) `hatch new` | Built-in minimal scaffolders — a quick start, not the hardened CI-complete shape; flesh out afterward. |
+| [`mgedmin/check-python-versions`](https://github.com/mgedmin/check-python-versions) | Opt-in linter that cross-checks the supported-Python declarations that drift — trove classifiers, `requires-python`, tox `env_list`, and the GitHub Actions matrix — and fails on mismatch (`uvx check-python-versions .`; pre-commit hook). Complements deriving the CI matrix from classifiers via `build-and-inspect-python-package`. |
+
+**Flagship worked examples** (large, well-run, source-verified Sept 2026) — for the
+non-house-style options `bootstrap-python-project` offers:
+
+| Repo | Demonstrates |
+| --- | --- |
+| [`pydantic/pydantic`](https://github.com/pydantic/pydantic) | hatchling; **Makefile-over-`uv run`** task runner; **uv-native CI** (no tox); uv **workspace** monorepo (pure `pydantic` + maturin `pydantic-core`); **mkdocs-material** + mkdocstrings + mike; PEP 735 groups + runtime extras; coverage combine across matrix; pyright-gated typing; free-threaded matrix. |
+| [`fastapi/fastapi`](https://github.com/fastapi/fastapi) | `pdm-backend`; **`scripts/*.sh`** task runner; uv-native CI with **`prek`** pre-commit and a **`test-redistribute` sdist-integrity job** (install from the sdist, test inside it, build wheel from it); `re-actors/alls-green` single required gate; mkdocs-material; `uv build` + `uv publish` OIDC. |
 
 ## Compiled extensions & ABI
 

@@ -40,6 +40,12 @@ attempted — don't reinvent a branch someone already wrote.
 
 ## Changes
 
+- **Get existing code under VCS with a clean tree before you modify it.** If a
+  project holds code that isn't committed (not a git repo, or a dirty working tree),
+  stop and **ask the user how to proceed** — to commit/stash outstanding changes, or
+  to initialize a repo and commit first — rather than doing it on their behalf. This
+  keeps your edits a reviewable, revertible diff and ensures nothing pre-existing is
+  lost. Never modify code you can't diff against a committed baseline.
 - **Don't delete existing content** (code, docs, comments, config) unless the
   task requires it and the user is aware.
 - **Don't commit or push without the user's explicit OK**, and **never commit
