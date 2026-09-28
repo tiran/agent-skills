@@ -242,6 +242,20 @@ interpreters coexist. `MESONPY_EDITABLE_VERBOSE=1` (or
 files with `__file__` under an editable install — use `importlib.resources`.
 Metadata changes (deps, entry points) need a reinstall.
 
+> **Gotcha — the sdist packages the git commit, not your working tree.**
+> meson-python builds the sdist by running `meson dist --allow-dirty`, which
+> archives the **latest committed revision**. Uncommitted edits and untracked files
+> are **silently excluded** — `--allow-dirty` suppresses the usual dirty-tree error,
+> so there is no warning. Because `uv build` / `python -m build` build the wheel
+> *from that sdist*, the released wheel reflects **only committed state** — so
+> **commit before you `uv build`, tag, or release**. (Direct wheel builds —
+> `pip install .`, `pip install -e .` — use the working tree instead and *do* see
+> local changes, so the editable dev loop is unaffected; the trap only bites at
+> sdist/`uv build`/release time.) **Record this in the project's `AGENTS.md` and its
+> developer/release docs** (e.g. `CONTRIBUTING.md`, a RELEASING checklist) so
+> contributors commit before cutting a release and don't chase "my fix isn't in the
+> wheel" bugs.
+
 ## 9. Optional: abi3 / limited-API wheel
 
 Three coordinated pieces (per the limited-API guide):
@@ -283,10 +297,11 @@ to PyPI, hardened permissions — see
 
 ## 11. Verify and delete the old build
 
-1. `uv build` → sdist **and** wheel, no `setup.py` involved. `uv build` (like
-   `python -m build`) builds the wheel *from* the sdist by default, so this
-   already exercises the VCS-version fallback to `PKG-INFO` (step 5) and catches
-   files missing from the sdist.
+1. **Commit first** (step 8 gotcha: the sdist packages the committed revision, not
+   your working tree). Then `uv build` → sdist **and** wheel, no `setup.py`
+   involved. `uv build` (like `python -m build`) builds the wheel *from* the sdist
+   by default, so this already exercises the VCS-version fallback to `PKG-INFO`
+   (step 5) and catches files missing from the sdist.
 2. `pip install dist/*.whl` in a clean env; `import mypkg`; run the tests.
 3. Editable install + touch one source → confirm the on-import rebuild.
 4. Delete `setup.py`, `setup.cfg`, `MANIFEST.in`; update docs/CI that called
