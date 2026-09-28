@@ -33,6 +33,8 @@ a new draft. Metadata bugs are quiet, so verify with `validate-pyproject` and
    - `reference/dependencies.md` — version constraints (avoid caps), extras vs
      dependency groups, `[build-system].requires`, and the Torch
      `--no-build-isolation` special case.
+   - `reference/from-poetry.md` — Poetry (and PDM) → PEP 621: the `[tool.poetry]`
+     field map, caret/tilde → floor translation, and the backend/lockfile swap.
 
 ## Related skills
 

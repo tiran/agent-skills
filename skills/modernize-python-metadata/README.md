@@ -7,6 +7,8 @@ expressions** (an expression + `license-files`, never the full text), trove
 classifiers (including `Private :: Do Not Upload`), **well-known project URLs**,
 authors/keywords/`requires-python`, dependency version constraints (**floors, not
 caps**), **[PEP 735](https://peps.python.org/pep-0735/) dependency groups vs extras**, and the `[build-system]` table.
+It also includes a **Poetry → PEP 621 migration lens** (the `[tool.poetry]` field
+map and the caret/tilde → floor translation; PDM too).
 
 **Keeps your build backend** — setuptools is a fine choice and reads `[project]`;
 this skill moves *metadata*, it does not remove setuptools or change how the
@@ -24,6 +26,7 @@ and `twine check` (SKILL step 11).
 | `AGENTS.md` | Cross-agent entry point (Codex and other `AGENTS.md`-aware agents). |
 | `reference/field-guide.md` | Full `[project]` field reference, setup.py→`[project]` map, tool-version floors. |
 | `reference/dependencies.md` | Version constraints, extras vs dependency groups, build-system + Torch `--no-build-isolation`. |
+| `reference/from-poetry.md` | Poetry (and PDM) → PEP 621: `[tool.poetry]` field map, caret/tilde → floor table, backend + lockfile swap. |
 
 ## Related
 

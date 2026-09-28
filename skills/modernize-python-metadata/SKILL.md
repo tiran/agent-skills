@@ -7,8 +7,11 @@ description: >-
   classifiers, well-known project URLs, authors/keywords/requires-python,
   dependency version constraints (avoid upper caps), PEP 735 dependency groups
   vs extras, and the build-system table. Keeps the existing build backend
-  (setuptools is fine). Use when asked to clean up packaging metadata, move
-  metadata out of setup.py/setup.cfg, or improve a project's PyPI page.
+  (setuptools is fine). Includes a Poetry → PEP 621 migration lens (the
+  [tool.poetry] field map and caret/tilde → floor translation; PDM too). Use when
+  asked to clean up packaging metadata, move metadata out of setup.py/setup.cfg,
+  migrate a Poetry (or PDM) project to [project]/PEP 621, or improve a project's
+  PyPI page.
 ---
 
 # Modernize Python packaging metadata
@@ -83,6 +86,7 @@ skill flags the version-sensitive spots (`reference/field-guide.md` has a table)
 ```bash
 ls pyproject.toml setup.py setup.cfg 2>/dev/null
 grep -nE 'name=|version=|install_requires|extras_require|classifiers|url=|author' setup.py setup.cfg 2>/dev/null
+grep -nE '^\[tool\.poetry|^\[project\]' pyproject.toml 2>/dev/null   # Poetry vs standard layout
 ```
 
 Metadata can be static in `setup.cfg [metadata]`, imperative in `setup.py`
@@ -91,6 +95,14 @@ Metadata can be static in `setup.cfg [metadata]`, imperative in `setup.py`
 is a metadata move, not a backend change — if the project builds with setuptools,
 keep setuptools (it reads `[project]` since v61); build *logic* like `ext_modules`
 stays where it is (step 9, step 11).
+
+> **Coming from Poetry?** If metadata lives under `[tool.poetry]`, first translate it
+> to `[project]` with the field map and the Poetry-operator → PEP 440 floor table in
+> [`reference/from-poetry.md`](reference/from-poetry.md) (this also covers the
+> `poetry-core` → standard-backend and `poetry.lock` → `uv.lock` swaps), then follow
+> the steps below. Poetry ≥ 2.0 projects may already use `[project]` — then it's
+> mostly a backend/lockfile swap. PDM is already PEP 621-native, so it's the same
+> backend/lockfile swap without the metadata rewrite.
 
 ## 2. Core `[project]` fields
 
