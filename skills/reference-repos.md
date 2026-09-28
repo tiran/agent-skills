@@ -135,6 +135,23 @@ ported stdlib modules like `Objects/listobject.c`, `Modules/_collectionsmodule.c
 and **nanobind** (`docs/free_threaded.rst`, `nb::ft_mutex`/`ft_object_guard`, split-mode
 `abi3t`). See each skill's `reference/` files for the `file:line` citations.
 
+## Typing & stubs
+
+Grounding for [`ship-type-information`](ship-type-information/SKILL.md) — packaging and
+verifying type info (`py.typed`, `.pyi` stubs, the checkers).
+
+| Repo / tool | Author | Worth studying for |
+| --- | --- | --- |
+| [`python/mypy`](https://github.com/python/mypy) (`stubgen`, `stubtest`) | Jukka Lehtosalo & the mypy team | The generic stub generator and the authoritative "does this `.pyi` match the runtime module" checker; the PEP 561 reference implementation. |
+| [`microsoft/pyright`](https://github.com/microsoft/pyright) | Eric Traut / Microsoft | Fast checker plus `--verifytypes`, the type-completeness score for a `py.typed` library. |
+| [`astral-sh/ty`](https://github.com/astral-sh/ty) / [`facebook/pyrefly`](https://github.com/facebook/pyrefly) | Astral / Meta | The two Rust checkers; Pyrefly also does `pyrefly infer` (static annotation insertion). |
+| [`Instagram/MonkeyType`](https://github.com/Instagram/MonkeyType) | Meta | Runtime-trace annotation of untyped code via the test suite (drafts to review). |
+| [`JelleZijlstra/autotyping`](https://github.com/JelleZijlstra/autotyping) | Jelle Zijlstra | Deterministic AST insertion of the obvious annotations (None/bool returns, trivial params). |
+| [`wjakob/nanobind`](https://github.com/wjakob/nanobind) | Wenzel Jakob | Best-fidelity extension stubs via `__nb_signature__` (`nanobind_add_stub`, pattern files); see also [`nanobind_example`](https://github.com/wjakob/nanobind_example). |
+| [`pybind/pybind11-stubgen`](https://github.com/pybind/pybind11-stubgen) | Sergei Izmailov | Stubs for pybind11 (and other) extensions from docstrings. |
+| [`stubgen-pyx`](https://github.com/vyasr/stubgen-pyx) | jon-edward / vyasr | Source-level stub generation for **Cython** — parses `.pyx`/`.pxd`, keeps your PEP 484 annotations, normalizes Cython types (`bint`→`bool`); better than runtime `stubgen` for Cython. |
+| [`python/typeshed`](https://github.com/python/typeshed) | typeshed maintainers | The reference `.pyi` corpus and where third-party stub-only (`types-*`) packages live. |
+
 ## Crypto / FIPS auditing
 
 Grounding for [`crypto-fips-audit`](crypto-fips-audit/SKILL.md). The **authorities
