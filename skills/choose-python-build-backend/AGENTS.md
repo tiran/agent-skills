@@ -28,6 +28,8 @@ docs; the decision procedure is a new draft.
      meson-python, scikit-build-core, maturin, setuptools.
    - `reference/why-not-setuptools.md` — the balanced case for/against setuptools
      (deprecations, editable installs, parallel-build races, defaults).
+   - `reference/why-not-poetry.md` — why Poetry is out of scope: a balanced take
+     (part taste), and when it still fits a new product.
 
 ## Related skills
 
