@@ -9,7 +9,9 @@ that does the migration.
 Covers **uv-build**, **flit-core**, **hatchling** (including compiled builds via
 `scikit-build-core[hatchling]` or a custom `hatch_build.py` hook),
 **meson-python**, **scikit-build-core**, **maturin**, and **setuptools** (the
-legacy path). Poetry is intentionally out of scope.
+legacy path). Poetry is intentionally out of scope — the balanced rationale (and
+when it still fits a new product) is in
+[`reference/why-not-poetry.md`](reference/why-not-poetry.md).
 
 **Status: Experimental** — grounded in the PyPA tool recommendations and current
 backend docs; the decision procedure is a new draft.
@@ -22,6 +24,7 @@ backend docs; the decision procedure is a new draft.
 | `AGENTS.md` | Cross-agent entry point (Codex and other `AGENTS.md`-aware agents). |
 | `reference/backends.md` | Per-backend assessment + comparison table (purelib/platlib, metadata, build system, `[build-system]` block, migration notes). |
 | `reference/why-not-setuptools.md` | The balanced case for/against setuptools. |
+| `reference/why-not-poetry.md` | Why Poetry is out of scope — a balanced take, and when it still fits (esp. new products). |
 
 ## Related
 

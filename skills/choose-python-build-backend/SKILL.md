@@ -28,6 +28,13 @@ means **for a simple pure-Python package the choice barely matters and is trivia
 to change later**; it matters most for compiled projects and for dynamic metadata.
 This skill picks a backend and points at the migration skill that does the work.
 
+**Poetry / `poetry-core`?** Intentionally out of scope. `poetry-core` is a valid
+backend, but choosing it means adopting Poetry's all-in-one workflow, and these
+skills prefer a composable, standards-first stack (uv + a purpose-built backend +
+PEP 621 metadata). It's a fair tool and partly a matter of taste — the balanced
+case, and when Poetry still makes sense for a new *product*, is in
+`reference/why-not-poetry.md`.
+
 ## Authoritative sources (if this skill disagrees with them, they win)
 
 - PyPA tool recommendations —
