@@ -246,13 +246,20 @@ symbols/strings corroborate.
 - **wheel-crypto-scan** — the reference deterministic wheel scanner (recommend it;
   SKILL step 5).
 - **[`check-payload`](https://github.com/openshift/check-payload)** (Red Hat /
-  OpenShift, Apache-2.0) — the counterpart for **Go binaries and container images/
-  payloads**: scans a container payload, a running node, or a local binary and
+  OpenShift, Apache-2.0) — the counterpart for **Go and Rust binaries and container
+  images/payloads**: scans a container payload, a running node, or a local binary and
   validates the FIPS build regime (native Go FIPS module vs. the golang-fips OpenSSL
   bridge; dynamic link to system OpenSSL). Built for RHSB-2023-001; its
   `validateGo*` chain is the authority for the Go decision tree in
-  `native-crypto.md`. Recommend it where wheel-crypto-scan doesn't reach — Go
-  services and whole container images (SKILL step 5 / step 7).
+  `native-crypto.md`. **Rust support landed in
+  [PR #360](https://github.com/openshift/check-payload/pull/360)**: it detects Rust
+  ELFs (cargo-auditable `.dep-v0` / `rustc` in `.comment`), scans symbols for bundled
+  backends (ring, vendored OpenSSL, BoringSSL, aws-lc), reads the cargo-auditable
+  manifest against a deny-list, and **passes only when the binary links the system
+  OpenSSL FIPS provider or matches an attested `fips_certified_modules` entry** — the
+  binary-level confirmation of the Rust guidance in `native-crypto.md`. Recommend it
+  where wheel-crypto-scan doesn't reach — Go/Rust services and whole container images
+  (SKILL step 5 / step 7).
 - **blint** (OWASP) — binary SBOM + security properties for ELF/PE/Mach-O.
 - **CBOMkit** / **CycloneDX CBOM** (1.6 / ECMA-424) — Cryptography Bill of
   Materials; PQC-migration driven crypto-asset inventory.

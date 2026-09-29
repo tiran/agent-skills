@@ -295,12 +295,14 @@ human call (same split this skill draws). Add `--resume`/cache for large runs.
 > weak-crypto lens — still run the step-3 linter (`ruff --select S` / `semgrep
 > p/crypto`) and the manual checks. Read its `--format html` report for the hand-off.
 
-For **Go binaries or a whole container image/payload** — which wheel-crypto-scan
-doesn't cover — run Red Hat's
+For **Go or Rust binaries, or a whole container image/payload** — which
+wheel-crypto-scan doesn't cover — run Red Hat's
 [`check-payload`](https://github.com/openshift/check-payload) (`payload`/`node`/
-`local` modes). It validates the Go FIPS build regime and system-OpenSSL linkage;
-`reference/native-crypto.md` → "Go" and `reference/binary-inspection.md` →
-"Related tooling" explain what it checks.
+`local` modes). It validates the Go FIPS build regime and system-OpenSSL linkage, and
+(as of [PR #360](https://github.com/openshift/check-payload/pull/360)) **Rust binaries**
+too — passing only when they link the system OpenSSL FIPS provider or match an attested
+module. `reference/native-crypto.md` → "Go"/"Rust" and `reference/binary-inspection.md`
+→ "Related tooling" explain what it checks.
 
 A stripped, statically linked object with no symbols is **opaque** — you cannot
 prove absence of crypto, so report it for review, never as "clean".

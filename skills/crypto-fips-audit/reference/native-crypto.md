@@ -94,8 +94,9 @@ host FIPS policy into the container —
 
 To scan a whole image/payload rather than one binary, [`check-payload`](https://github.com/openshift/check-payload)
 (Red Hat/OpenShift) has `payload`/`node`/`local` modes that walk every executable
-and apply the Go/OpenSSL-linkage checks above — the container-scale counterpart to
-wheel-crypto-scan (see `binary-inspection.md` → "Related tooling").
+and apply the Go/Rust/OpenSSL-linkage checks (Rust binary support added in
+[PR #360](https://github.com/openshift/check-payload/pull/360)) — the container-scale
+counterpart to wheel-crypto-scan (see `binary-inspection.md` → "Related tooling").
 
 ## Why vendored / self-compiled / embedded crypto fails
 
@@ -184,6 +185,24 @@ reference for it:
   `golang.org/x/crypto/blake2*`, `chacha20poly1305`, X25519 as KEX.
 
 ### Rust — providers, vendoring, trust store
+
+> **Choosing a Rust TLS backend for FIPS + PQC on RHEL** (the recurring question, e.g.
+> migrating a `rustls` + `ring` service). To inherit RHEL's **validated FIPS module**
+> *and* `/etc/crypto-policies` — including PQC via the `DEFAULT:PQ` / `FIPS:PQ`
+> subpolicy — bind **system OpenSSL 3.5** (the `openssl` / `openssl-sys` crate with
+> `OPENSSL_NO_VENDOR=1`), *not* a rustls-bundled backend. This is the Red-Hat-preferred
+> path: crypto lives in the environment's validated module and PQC (ML-KEM/
+> X25519MLKEM768) is inherited centrally from the base image + policy, no code pinning.
+> **`rustls` + `aws-lc-rs`** (`prefer-post-quantum`, **default since rustls 0.23.27**)
+> gives PQC interop with a trivial `ring → aws-lc-rs` swap, **but** aws-lc-rs is a
+> *bundled, AWS-validated* module outside RHEL's boundary → **no RHEL FIPS**, and it
+> **bypasses crypto-policies**. Pick it only if a RHEL-validated-FIPS story is out of
+> scope. **Caveat either way:** RHEL's validated OpenSSL FIPS provider is still 3.0.7
+> (no ML-KEM), so *FIPS-validated* PQC isn't available yet — under `FIPS:PQ` the
+> classical (ECDH) half is validated and ML-KEM runs unvalidated
+> (`fips-140-3-and-openssl.md`). The trade-off in full lives in that lens; the effort
+> gap is a TLS-layer rewrite (rustls→openssl, incl. hyper/tonic transports) for OpenSSL
+> vs a backend swap for aws-lc-rs.
 
 - **`ring` and default `rustls` are not FIPS.** rustls decouples protocol from
   provider; FIPS needs the **`aws-lc-rs` provider with `--features=fips`** (pulls
