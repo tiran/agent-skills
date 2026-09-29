@@ -182,7 +182,13 @@ reference for it:
 - **`ring` and default `rustls` are not FIPS.** rustls decouples protocol from
   provider; FIPS needs the **`aws-lc-rs` provider with `--features=fips`** (pulls
   the validated `aws-lc-fips` module; adds cmake/Go build deps). `ring` has no FIPS
-  support.
+  support. **But `--features=fips` still gives you a *statically bundled* AWS-LC,
+  validated on *AWS-controlled* operating environments (Amazon Linux/Ubuntu on earlier
+  certs, Amazon Linux 2023 on newer ones) — it is *not* the
+  system/RHEL validated module, so on RHEL it stays outside the boundary** even though
+  it "has a FIPS cert." This is where the AWS-LC-≠-RHEL-FIPS point actually bites,
+  because **`aws-lc-rs` is rustls's default provider** (see
+  `fips-140-3-and-openssl.md` → AWS-LC callout).
 - **`openssl-sys` `vendored` feature** compiles and statically links a bundled (non-
   validated) OpenSSL — set **`OPENSSL_NO_VENDOR=1`** to force system OpenSSL. Flag
   `vendored`/`vendored-openssl` anywhere in the tree.

@@ -41,6 +41,7 @@ policy moves. Verify every finding against the sources linked in `SKILL.md`.
 | `SKILL.md` | The workflow — 8 ordered steps + frontmatter. **Source of truth.** |
 | `AGENTS.md` | Cross-agent entry point (Codex and other `AGENTS.md`-aware agents). |
 | `reference/fips-primer.md` | What FIPS 140-3 governs; approved vs non-approved per class; key sizes/curves; counterintuitive cases; `usedforsecurity`; PQC; standards map. |
+| `reference/fips-140-3-and-openssl.md` | 140-2 → 140-3 for devs/packagers; added/removed/constrained algorithm tables; use-scoping (XTS-at-rest, GCM IV); OpenSSL provider model + RHEL mapping; practical PQC hybrids; a podman recipe to verify FIPS behavior in a container. |
 | `reference/python-audit.md` | Stdlib under FIPS + the problematic-PyPI-package table + grep starting points. |
 | `reference/native-crypto.md` | Validated vs compliant vs capable; approved providers; why vendoring breaks the boundary; per-language build flags; provenance; CA trust. |
 | `reference/binary-inspection.md` | Per-format binary inspection (CLI + pyelftools/macholib/pefile); posture model; embedded SBOM; limitations; tooling. |
