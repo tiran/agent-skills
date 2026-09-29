@@ -51,11 +51,16 @@ Detection signals (target host): kernel `cat /proc/sys/crypto/fips_enabled` == 1
 (libgcrypt) / `gnutls_fips140_mode_enabled()` (GnuTLS) / `NSS_GetSystemFIPSEnabled()`
 or a `PK11` FIPS token (NSS). OpenSSL 3.x FIPS is a dynamically loaded `fips`
 provider (`fips.so`) activated via `openssl.cnf` → `fipsmodule.cnf`, with all
-approved algorithms matching the `fips=yes` property query. **NSS's validated
-module is the `softokn`/`freebl` pair** (the "NSS Cryptographic Module"), and
-**GnuTLS delegates its primitives to `nettle`/`hogweed`** — so with NSS or GnuTLS
-the boundary lives in a *low-level* library, not the top-level `libnss3`/
-`libgnutls` an app links.
+approved algorithms matching the `fips=yes` property query. The two differ in where
+the boundary sits, so don't assume one pattern for both:
+
+- **NSS** — the validated module is the low-level **`softokn`/`freebl` pair** (the
+  "NSS Cryptographic Module"); the higher-level `libnss3`/`libssl3` an app links sit
+  **outside** it.
+- **GnuTLS** — the module boundary **includes `libgnutls` itself**, together with the
+  `nettle`/`hogweed`/`gmp` it delegates primitives to (usable only via the GnuTLS
+  API). So unlike NSS, the top-level library is *inside* the boundary. (RHEL GnuTLS
+  security policy, cert #4780/#4846.)
 
 ### Containers: the kernel flag comes from the host, the policy from the runtime
 
@@ -154,8 +159,9 @@ exactly the decision tree [`check-payload`](https://github.com/openshift/check-p
 `binary-inspection.md`) walks in `validateGoNativeFIPS`, and it is the authoritative
 reference for it:
 
-- **Native Go FIPS module** — pure Go, **no cgo**; its own CMVP cert (**#5247**,
-  module `crypto/fips140` ≥ **v1.0.0**). check-payload enforces the native rules for
+- **Native Go FIPS module** — pure Go, **no cgo**; its own CMVP cert (**#5247**, the
+  "Go Cryptographic Module" **v1.0.0**; `crypto/fips140` is the API package, not the
+  module name). check-payload enforces the native rules for
   **Go ≥ 1.27** (and **Go 1.26 when activated**). It requires the module be both
   **compiled in** *and* **build-activated**: `DefaultGODEBUG` must contain
   `fips140=auto|on|only` (RH go-toolset injects `fips140=on`; `GOFIPS140=` at build
@@ -209,12 +215,15 @@ reference for it:
 - **Doubled sys crates** — a FIPS build can drag in both `aws-lc-sys` and
   `aws-lc-fips-sys` (rustls-webpki feature gap); verify only the FIPS one links.
 - **Symbol prefixing** — AWS-LC built with `BORINGSSL_PREFIX` renames symbols (not
-  the file); trust the `OPENSSL_IS_AWSLC`/`AWSLC_VERSION` **strings** over symbol
-  names. **Telling the FIPS build from the stock one:** `aws-lc-rs` links
+  the file); trust the banner **strings `AWS-LC` / `AWS-LC FIPS <ver>`** and the
+  `AWSLC_version_string` symbol over prefixed names (the `OPENSSL_IS_AWSLC` macro is
+  compile-time-only — it leaves no symbol or string in the binary).
+  **Telling the FIPS build from the stock one:** `aws-lc-rs` links
   `aws-lc-sys` (non-FIPS) by default and `aws-lc-fips-sys` (validated) only with the
   `fips` feature, and *both leave the same `aws-lc-rs` cargo path* — so the crate
   name can't decide it. The distinguishers: `nm` showing **`aws_lc_fips_*`-prefixed
-  symbols** (measured ~2118 in a FIPS build vs 0 in stock), or `strings` finding
+  symbols** (~2118 in a FIPS build vs 0 in stock, per wheel-crypto-scan's measurement
+  on aws-lc-rs 1.18.1), or `strings` finding
   **`AWS-LC FIPS <version>`** (stock spells it `AWS-LC <version>`). The FIPS version
   string lives in **`.text`**, so it survives stripping even once the symbol prefix
   is gone. Either way it's still a bundled static copy (CONDITIONAL) — this only tells

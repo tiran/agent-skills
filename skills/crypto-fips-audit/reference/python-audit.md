@@ -26,9 +26,9 @@ FIPS issues linked inline.
   hashlib through OpenSSL and make the built-ins refuse in FIPS mode unless
   `usedforsecurity=False`, and the distro can drop the built-in modules entirely
   (`configure --with-builtin-hashlib-hashes=`), so a bare constructor raises "code
-  for hash md5 was not found." Upstream later adopted the refuse-in-FIPS behaviour
-  (cpython PR #127301), but you cannot assume it — **which `python` runs the code
-  determines the outcome.**
+  for hash md5 was not found." Upstream refuse-in-FIPS for the built-ins is only
+  **proposed, not merged** (cpython PR #127301 is open, `DO-NOT-MERGE`), so you
+  **cannot** assume it — **which `python` runs the code determines the outcome.**
 - **Audit:** flag `hashlib.md5(`/`sha1(`/`new("md5"`/`new("sha1"` without
   `usedforsecurity=False`; flag `md4`/`ripemd160`/`sm3`/`whirlpool`
   unconditionally. State the **interpreter build** assumed: on a distro (RHEL/
@@ -148,7 +148,7 @@ instead:
 | **pycurl** | libcurl | OpenSSL/GnuTLS/NSS/Schannel (build-dependent) TLS | System libcurl → inherits system provider; a bundled libcurl in the wheel is the finding. `CURLOPT_SSL_*`/`CAINFO`/cipher overrides = config class. |
 | **psycopg2 / psycopg[c] / psycopg[binary]** | libpq | OpenSSL TLS; SCRAM-SHA-256 auth (approved), legacy `md5` password auth (not FIPS) | `psycopg[binary]` **bundles libpq+OpenSSL**; distro/`psycopg[c]` link system. Flag `sslmode=`/`sslrootcert` overrides; note md5-auth. |
 | **asyncpg** | (its own libpq-free proto) | TLS via Python `ssl` | Uses stdlib `ssl` — the `ssl` rules above apply, not a separate native copy. |
-| **mysqlclient** | libmysqlclient / libmariadb | OpenSSL (MariaDB C/C can also use **GnuTLS**/Schannel/**wolfSSL**) | wolfSSL is a bundled mini-TLS → boundary escape. Check linkage; flag `ssl_*`/cipher config. |
+| **mysqlclient** | libmysqlclient / libmariadb | OpenSSL; MariaDB Connector/C can also use **GnuTLS**/Schannel; **MySQL's `libmysqlclient` can bundle wolfSSL** (ex-yaSSL) | A bundled wolfSSL mini-TLS (via MySQL's client lib, not MariaDB C/C) → boundary escape. Check linkage; flag `ssl_*`/cipher config. |
 | **mysql-connector-python** | pure or C-ext | TLS via Python `ssl` (pure) or libmysql (C) | Pure path = stdlib `ssl`. Prefer it on FIPS hosts. |
 | **pyodbc / pymssql** | unixODBC+driver / FreeTDS | FreeTDS → OpenSSL/GnuTLS; MS ODBC driver **bundles its own TLS** | MS driver = bundled crypto. FreeTDS usually system. |
 | **pyzmq** | libzmq (+ libsodium) | **CurveZMQ = Curve25519/X25519 + Salsa20/Poly1305 via libsodium — NOT approved** | Wheels **bundle libzmq + libsodium** (e.g. `pyzmq.libs/libsodium-*.so`). CURVE security is non-approved regardless of linkage. |

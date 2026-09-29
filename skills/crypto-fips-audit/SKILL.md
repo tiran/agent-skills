@@ -239,7 +239,7 @@ validated provider; do not vendor, statically link, or self-compile crypto.**
 ## 5. Confirm against the built artifact
 
 Source review misses **vendored/statically compiled-in** crypto — the most
-important case (`cryptography` 42+ compiles OpenSSL straight into the extension).
+important case (`cryptography`'s PyPI wheels compile OpenSSL straight into the extension).
 Inspect the actual binaries. Commands, the system/bundled/static/unknown/**opaque**
 posture model, and its limits are in `reference/binary-inspection.md`. The CLI
 tools below are host-native; to inspect a **foreign arch/OS** wheel (a macOS
@@ -320,7 +320,10 @@ prove absence of crypto, so report it for review, never as "clean".
   Code that **hardcodes** any of these (or ships its own crypto stack) bypasses
   it. Surface every hardcoded TLS version / cipher list / curve list (system-
   integration class). Setting the FIPS *policy* is necessary but **not
-  sufficient** — true FIPS mode is the kernel `fips=1` flag.
+  sufficient** — true FIPS mode is the kernel `fips=1` flag. To probe what a
+  RHEL/UBI build actually refuses in FIPS mode without a FIPS host, use the container
+  recipe in `reference/fips-140-3-and-openssl.md` (§6, a quick-test hack — not real
+  kernel FIPS).
 - **Containers** — `/etc/crypto-policies` comes from the *image*, but the kernel
   `fips_enabled` flag comes from the *host*. Podman/CRI-O bind-mount the host's FIPS
   policy in (`addFIPSMounts()`); a stock/distroless image or plain Docker can run
