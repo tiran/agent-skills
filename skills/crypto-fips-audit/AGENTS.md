@@ -46,6 +46,10 @@ every finding against the sources linked in `SKILL.md`.
      SecP256r1MLKEM768); a podman recipe to verify FIPS behavior in a container.
    - `reference/python-audit.md` — stdlib under FIPS (hashlib/ssl/random/hmac) +
      the problematic-PyPI-package table + grep starting points.
+   - `reference/weak-crypto.md` — the weak/insecure-crypto class (use case 2),
+     independent of FIPS: AES-ECB, RSA padding, hand-rolled/modexp, IV reuse, timing
+     compares, weak keys, `random` for secrets, disabled TLS verification, legacy
+     ciphers; greps + source linters (ruff/semgrep/bandit).
    - `reference/native-crypto.md` — validated vs compliant vs capable; RHEL/Fedora
      approved providers; why vendoring breaks the boundary; per-language build
      flags (C/C++, Go, Rust); provenance; CA trust.
