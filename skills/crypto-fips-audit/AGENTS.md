@@ -28,9 +28,9 @@ a human, never as a pass/fail certification.
 
 ## Status
 
-**Experimental** — grounded in the cited NIST/RHEL/Go/Rust/PyPI sources and in the
-reference scanner; the step order is a new draft, and crypto policy moves. Verify
-every finding against the sources linked in `SKILL.md`.
+**Beta** — grounded in the cited NIST/RHEL/Go/Rust/PyPI sources and in the reference
+scanner, and applied to real cases; crypto policy moves fast, so verify every finding
+against the sources linked in `SKILL.md`.
 
 ## How to run it
 

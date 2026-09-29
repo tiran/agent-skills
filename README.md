@@ -27,7 +27,7 @@ metadata, then compiled-extension and ABI ports, then release and auditing:
 | [`port-to-torch-stable-abi`](skills/port-to-torch-stable-abi/) | Beta | Port a compiled PyTorch C++/CUDA/ROCm extension to the **stable ABI** (one wheel across Torch versions), then assess Python **abi3**. |
 | [`ship-type-information`](skills/ship-type-information/) | Exp | Ship **verified type info** — annotate untyped code, add **`py.typed`**, generate **`.pyi` stubs** for C/C++/Rust extensions, verify with mypy/pyright/ty/pyrefly + `stubtest`, and package so the wheel carries them. |
 | [`secure-python-release-pipeline`](skills/secure-python-release-pipeline/) | Exp | A secure **GitHub Actions** build/release pipeline — sdist + wheels (cibuildwheel), **Trusted Publisher** to PyPI, minimal permissions, zizmor. |
-| [`crypto-fips-audit`](skills/crypto-fips-audit/) | Exp | Audit a Python package — and any **C/C++/Go/Rust** it ships — for its cryptography: inventory usage, find **insecure/weak crypto**, and assess **FIPS 140-3** compliance. Source-first, confirmed against the built artifact. Gathers evidence; does not certify. |
+| [`crypto-fips-audit`](skills/crypto-fips-audit/) | Beta | Audit a Python package — and any **C/C++/Go/Rust** it ships — for its cryptography: inventory usage, find **insecure/weak crypto**, and assess **FIPS 140-3** compliance. Source-first, confirmed against the built artifact. Gathers evidence; does not certify. |
 
 **Status** reflects how battle-tested a skill is:
 

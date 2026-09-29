@@ -20,10 +20,10 @@ description: >-
 
 # Audit a Python package's cryptography (weak crypto and FIPS 140-3)
 
-**Status: Experimental.** Grounded in the sources below (NIST FIPS/SP, Red Hat/
-Fedora crypto-policy docs, Go/Rust/PyPI docs) and the reference scanner; the step
-order is a new draft and crypto policy moves — **verify findings against the cited
-sources** and treat this as an assessment aid, not an authority.
+**Status: Beta.** Grounded in the sources below (NIST FIPS/SP, Red Hat/Fedora
+crypto-policy docs, Go/Rust/PyPI docs) and the reference scanner, and applied to real
+cases — but crypto policy moves fast, so **verify findings against the cited sources**
+and treat this as an assessment aid, not an authority.
 
 **It gathers evidence and assesses risk; it does not certify FIPS compliance.**
 Only a NIST CMVP validation makes a module *validated*. This skill tells you where
