@@ -310,6 +310,8 @@ prove absence of crypto, so report it for review, never as "clean".
   `webpki-roots`) bypass the OS trust store. Remediations: `SSL_CERT_FILE`/
   `REQUESTS_CA_BUNDLE`, or [`truststore`](https://github.com/sethmlarson/truststore)
   (verifies against the OS trust store; the default in pip 24.2+, Python 3.10+).
+  **Which regime governs this — and why it is *not* FIPS or crypto-policies but a
+  distro-packaging / STIG / CC concern — is in `reference/trust-store.md`.**
 
 ## 7. crypto-policies & PQC
 

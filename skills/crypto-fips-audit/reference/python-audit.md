@@ -228,7 +228,7 @@ system OpenSSL/FIPS provider (check the artifact — `binary-inspection.md`);
 | **mmh3** | MurmurHash3 (non-crypto) | C/C++ | Yes | CONTEXT | Same class as murmurhash/xxhash |
 | **oqs** (liboqs) | PQC KEM + signatures (ML-KEM/ML-DSA/SLH-DSA) | binds/bundles **liboqs** (C) | Yes | NON-APPROVED | Approved algorithms, but liboqs is a research/prototyping lib, not a validated module; outside the system provider |
 | **pqcrypto** | PQC KEM + signatures (PQClean) | C bindings (PQClean) | Yes | NON-APPROVED | Approved algorithms, unvalidated PQClean impl outside any module |
-| **certifi** | CA trust bundle | Mozilla roots in a package | n/a | SYSTEM-INTEGRATION | Bypasses OS trust store; see `native-crypto.md` |
+| **certifi** | CA trust bundle | Mozilla roots in a package | n/a | SYSTEM-INTEGRATION | Bypasses OS trust store; which regime governs it (distro policy / STIG / CC, not FIPS) in `trust-store.md` |
 
 ### The good / system-backed choices
 

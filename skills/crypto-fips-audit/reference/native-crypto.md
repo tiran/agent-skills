@@ -231,7 +231,9 @@ reference for it:
 
 Bundled roots don't break algorithm validation, but they bypass OS trust /
 crypto-policy management (a corporate/internal CA added to the system is ignored,
-and revocations don't propagate).
+and revocations don't propagate). Which compliance regime actually governs a bundled
+trust store — distro packaging policy, STIG, and CC, but **not** FIPS-140 or
+crypto-policies — is laid out in [`trust-store.md`](trust-store.md).
 
 - **Python `certifi`** ships Mozilla's roots in a package. RHEL stdlib `ssl` uses
   `/etc/pki/tls/certs/ca-bundle.crt` (from `ca-certificates`); downstream

@@ -50,6 +50,9 @@ every finding against the sources linked in `SKILL.md`.
      system/bundled/static/unknown/opaque posture model; the all-providers marker
      table (OpenSSL/NSS/GnuTLS/libgcrypt/nettle); embedded SBOM; limitations;
      tooling.
+   - `reference/trust-store.md` — which regime governs a bundled CA store
+     (`certifi`/`webpki-roots`): distro packaging policy + STIG/CC, **not** FIPS or
+     crypto-policies; failure modes, provenance, remediation.
 3. Run **`scripts/scan_crypto.py`** (step 5) for a cross-format, cross-arch/OS
    binary pass: `uv run scripts/scan_crypto.py <file>…` — a PEP 723 script that
    reads ELF/Mach-O/PE symbols, dependencies, and banners from any host.
