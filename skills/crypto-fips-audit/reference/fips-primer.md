@@ -60,8 +60,8 @@ reasons, not weakness:
   libsodium is not a CMVP-validated module — so even Ed25519 (approved as an
   *algorithm* since FIPS 186-5) doesn't count when it comes from libsodium.
 - **Curves.** NIST approves only the curves it standardized (P-256/384/521, …).
-  **secp256k1** (Bitcoin/Ethereum) was rejected outright — NIST saw "no compelling
-  advantage." **Curve25519/Curve448** the *curves* were added to SP 800-186 (2023),
+  **secp256k1** (Bitcoin/Ethereum) is **not standardized by NIST** (not in SP 800-186)
+  and so is unapproved. **Curve25519/Curve448** the *curves* were added to SP 800-186 (2023),
   but the **X25519/X448 key-agreement schemes remain unapproved**: absent from SP
   800-56A, and NIST **declined again in a July 2025 proposal**, deprioritizing new
   classical key exchange in favour of the PQC transition. **Update:** in **January
