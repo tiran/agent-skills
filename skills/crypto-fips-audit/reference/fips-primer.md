@@ -165,10 +165,11 @@ non-approved-*module* finding exactly like a pure-Python RSA — not a non-appro
 **PQClean** bindings (Python/Rust `pqcrypto*`), and the pure-Rust RustCrypto crates
 (`ml-kem`/`ml-dsa`/`slh-dsa`, `fips203`/`204`/`205`). liboqs's own docs call it
 prototyping-only, so finding it in a shipped artifact warrants a hard look
-regardless of FIPS. On RHEL the validated PQC path is the **system OpenSSL 3.5 FIPS
-provider** — on RHEL **9.7/9.8** (OpenSSL rebased to 3.5, PQC opt-in via the
-`DEFAULT:PQ`/`FIPS:PQ` crypto-policy subpolicy) and **10.2** (on by default), not a
-vendored copy or AWS-LC. Details in `fips-140-3-and-openssl.md`.
+regardless of FIPS. On RHEL, PQC comes from **system OpenSSL 3.5** (not a vendored copy
+or AWS-LC): **RHEL 9.8+** enables it via the `DEFAULT:PQ` crypto-policy subpolicy, and
+**RHEL 10** ships it on by default. But it is **not FIPS-validated** — the validated
+`fips` provider is still 3.0.7 (no ML-KEM), so PQC runs from the default provider,
+outside the validated module. Details in `fips-140-3-and-openssl.md`.
 
 **`X25519MLKEM768` hybrid** (X25519 + ML-KEM-768) dominates real TLS deployment
 (Chrome/Firefox/OpenSSL 3.5/Go 1.24). Its FIPS status is **genuinely disputed**:

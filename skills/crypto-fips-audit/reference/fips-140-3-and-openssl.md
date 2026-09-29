@@ -67,7 +67,7 @@ OpenSSL 3 splits algorithms into **providers**:
 | --- | --- | --- | --- | --- |
 | 8 | 1.1.1 | monolithic FIPS module | **140-2** (Historical after 2026-09-21) | plan move to 9/10 |
 | 9.0–9.6 | 3.0.x | standalone `fips` provider RPM (since 9.2) | **140-3** (first-ever) | #4746 (9.0), #4857 (9.2–9.6) |
-| **9.7 / 9.8** | base lib **rebased to 3.5** (also NSS; 9.8 adds GnuTLS) | `fips` provider is the **reused 3.0.7 validated module** (not 3.5) | **140-3**; PQC **opt-in** via `DEFAULT:PQ`/`FIPS:PQ` | #4857 lineage |
+| **9.7 / 9.8** | base lib **rebased to 3.5** (also NSS; 9.8 adds GnuTLS) | `fips` provider is the **reused 3.0.7 validated module** (not 3.5) | **140-3**; PQC (non-FIPS) **opt-in** via `DEFAULT:PQ` | #4857 lineage |
 | 10.0–10.1 | 3.x | reuses the RHEL 9 `fips` provider | **140-3 only** | (reused) |
 | 10.2 | 3.5 | `fips` provider | **140-3**; PQC **on by default** (`DEFAULT`) | |
 | upstream | 3.0 / 3.5 | `fips.so` provider | 3.0 module = 140-2 | #4282 (3.0) |
@@ -99,18 +99,21 @@ via `fips-mode-setup`. On **RHEL 10 in FIPS mode**, PKCS#12 files use **PBMAC1**
 
 > **PQC on RHEL (as of 9.7/9.8).** RHEL 9.7 **rebased OpenSSL to 3.5** (and NSS; 9.8
 > adds GnuTLS), so ML-KEM/ML-DSA are present on the RHEL 9 stream — but **off by
-> default**: enable with `update-crypto-policies --set DEFAULT:PQ` (or `FIPS:PQ`).
+> default**: on **RHEL 9.8+** enable with `update-crypto-policies --set DEFAULT:PQ`
+> (**RHEL 10 ships PQC on by default**).
 > **The subtle part: the base library is 3.5.5 but the *validated FIPS provider* is
 > the reused 3.0.7 module**, which predates PQC and therefore carries **no ML-KEM/
 > ML-DSA**. ML-KEM lives only in the 3.5 **default** provider. Consequence, confirmed
 > on UBI 9.8 in FIPS mode: `openssl genpkey -algorithm ML-KEM-768` is **refused**
 > ("unsupported"), and `openssl list -providers` shows *"…OpenSSL FIPS Provider,
-> version 3.0.7-…"*. So **In FIPS mode**, hybrid ML-KEM is supported only by fetching
-> the **ECDH half from the validated `fips` provider** (the classical part stays
-> FIPS-compliant; the ML-KEM half runs from the unvalidated default provider);
-> `FIPS:PQ` turns the hybrid groups on. **RHEL 10.2** enables ML-KEM/ML-DSA in the
-> plain `DEFAULT` policy (no subpolicy). **OpenSSH** PQ key exchange is **not** in
-> RHEL 9.7 — use RHEL 10 for PQ SSH. (Verify any of this yourself with the container
+> version 3.0.7-…"*. So **FIPS + PQC together isn't achievable on RHEL yet** —
+> `DEFAULT:PQ` gives you PQC *outside* FIPS mode; there's no validated ML-KEM to enable
+> under FIPS. (**FIPS mode itself comes from the host** — kernel `fips=1` via
+> `fips-mode-setup`, inherited into containers by the runtime — not from
+> `update-crypto-policies`, which even warns it's "not sufficient for FIPS compliance".)
+> **RHEL 10.2** enables ML-KEM/ML-DSA in the plain `DEFAULT` policy (no subpolicy).
+> **OpenSSH** PQ key exchange is **not** in RHEL 9.7 — use RHEL 10 for PQ SSH. (Verify
+> any of this yourself with the container
 > recipe below.)
 
 ## 3. Added / removed / constrained algorithms (OpenSSL-mapped)
