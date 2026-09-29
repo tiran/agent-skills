@@ -6,7 +6,10 @@ certificates drift). If you are reading this months later, **re-verify every
 verdict against the linked NIST/vendor pages**; treat specific dates and
 approved/not-approved calls below as "true when written," not permanent. This
 primer is the algorithm/parameter reference; the *module* (validated-provider)
-requirement is in `native-crypto.md`.
+requirement is in `native-crypto.md`. For the **140-2 → 140-3** differences, the
+**added/removed/constrained** change tables, **use-scoping** (XTS-at-rest, GCM IV
+limits), and the **OpenSSL provider mapping** (incl. practical PQC hybrids), see
+[`fips-140-3-and-openssl.md`](fips-140-3-and-openssl.md).
 
 ## What FIPS 140-3 actually governs
 
@@ -176,7 +179,9 @@ non-approved-*module* finding exactly like a pure-Python RSA — not a non-appro
 (`ml-kem`/`ml-dsa`/`slh-dsa`, `fips203`/`204`/`205`). liboqs's own docs call it
 prototyping-only, so finding it in a shipped artifact warrants a hard look
 regardless of FIPS. On RHEL the validated PQC path is the **system OpenSSL 3.5 FIPS
-provider** (RHEL 10), not a vendored copy.
+provider** — on RHEL **9.7/9.8** (OpenSSL rebased to 3.5, PQC opt-in via the
+`DEFAULT:PQ`/`FIPS:PQ` crypto-policy subpolicy) and **10.2** (on by default), not a
+vendored copy or AWS-LC. Details in `fips-140-3-and-openssl.md`.
 
 **`X25519MLKEM768` hybrid** (X25519 + ML-KEM-768) dominates real TLS deployment
 (Chrome/Firefox/OpenSSL 3.5/Go 1.24). Its FIPS status is **genuinely disputed**:

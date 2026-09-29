@@ -40,6 +40,10 @@ every finding against the sources linked in `SKILL.md`.
      non-approved per algorithm class; key sizes/curves; the counterintuitive
      cases (Ed25519 vs X25519, SHA-1, BLAKE, scrypt/Argon2, ChaCha20-Poly1305);
      `usedforsecurity`; PQC; standards map.
+   - `reference/fips-140-3-and-openssl.md` — 140-2 → 140-3 for devs/packagers;
+     added/removed/constrained algorithm tables; use-scoping (XTS-at-rest, GCM IV);
+     OpenSSL provider model + RHEL mapping; practical PQC hybrids (X25519MLKEM768 vs
+     SecP256r1MLKEM768); a podman recipe to verify FIPS behavior in a container.
    - `reference/python-audit.md` — stdlib under FIPS (hashlib/ssl/random/hmac) +
      the problematic-PyPI-package table + grep starting points.
    - `reference/native-crypto.md` — validated vs compliant vs capable; RHEL/Fedora
