@@ -30,9 +30,9 @@ separate from *actually-broken* ones. The full "why" (incl. sodium/curves/BLAKE)
 in [`reference/fips-primer.md`](reference/fips-primer.md); it is **current as of
 September 2026** and should be re-verified against the NIST sources over time.
 
-**Status: Experimental** — grounded in the cited NIST/RHEL/Go/Rust/PyPI sources
-and in the reference scanner below; the step order is a new draft, and crypto
-policy moves. Verify every finding against the sources linked in `SKILL.md`.
+**Status: Beta** — grounded in the cited NIST/RHEL/Go/Rust/PyPI sources and in the
+reference scanner below, and applied to real cases; crypto policy moves fast, so
+verify every finding against the sources linked in `SKILL.md`.
 
 ## Layout
 
