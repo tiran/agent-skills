@@ -178,28 +178,12 @@ Not every one is a finding — most reduce to "links system OpenSSL, uses defaul
 
 ### Insecure use of otherwise-approved crypto (weak crypto, independent of FIPS)
 
-Raise these even on a FIPS host — an approved primitive can be broken *as used*
-(see `fips-primer.md` → "Approved ≠ used securely"). Report as the weak-crypto
-class (SKILL step 8), not as FIPS-140 violations.
-
-- **AES-ECB.** Flag `modes.ECB(` (`cryptography`), `AES.new(key, AES.MODE_ECB)`
-  (pycryptodome), or any `MODE_ECB` for confidentiality — it leaks plaintext
-  structure. Want AES-GCM (AEAD), or CBC/CTR with a random IV.
-- **RSA padding.** Encryption must use **OAEP**, signatures **PSS**. Flag
-  `padding.PKCS1v15()` used for `encrypt`/`decrypt` (Bleichenbacher / Marvin timing
-  oracle) and any unpadded/"textbook" RSA. `cryptography`'s `OAEP`/`PSS` are the
-  good path; v1.5 *signatures* are legacy-tolerated.
-- **Hand-rolled crypto.** A pure-Python RSA (`pow(m, e, n)`, `divmod`-based modexp,
-  a bespoke `encrypt`/`sign`) is not constant-time and skips padding/RNG/parameter
-  checks; **blinding narrows but doesn't close the side channel**. Flag such code
-  and the pure-Python `rsa`/`ecdsa` packages (table below); use a vetted library
-  over a validated module.
-- **Static/reused IVs and nonces.** A hardcoded IV, a zero nonce, or a counter that
-  resets is catastrophic for CTR/GCM (nonce reuse breaks GCM entirely). Flag
-  literal `iv=b"..."` / `nonce=` constants near cipher construction.
-- **Non-constant-time secret comparison.** Comparing a MAC, token, or password
-  hash with `==`/`!=` leaks length and content through timing. Use
-  `hmac.compare_digest(a, b)` (or `secrets.compare_digest`).
+The **weak-crypto class (use case 2 / SKILL step 8)** — AES-ECB, RSA PKCS#1 v1.5
+encryption, hand-rolled RSA/modexp, static/reused IV/nonce, timing-unsafe comparison,
+weak key sizes, `random` for secrets, disabled TLS verification, legacy ciphers — now
+lives in its own lens: [`weak-crypto.md`](weak-crypto.md) (with the greps and the
+source-linter guidance). Raise those even on a FIPS host; keep them separate from
+FIPS-140 findings. The pure-Python `rsa`/`ecdsa` packages appear in the table below.
 
 ## Problematic PyPI packages
 
@@ -268,48 +252,16 @@ grep -REn 'sslmode|sslrootcert|ssl_ca|CURLOPT_SSL|set_ciphers|CURVE_|enctype|ssl
 grep -REn 'import (niquests|qh3)\b|from (niquests|qh3)\b|urllib3\.future|urllib3_future|wassima' .
 grep -REn '\bqh3\b|\[http3\]|\[qh3\]|HTTP/3|http_version|force_http3|disable_http3' pyproject.toml setup.py setup.cfg requirements*.txt . 2>/dev/null
 grep -REn 'certifi|webpki|rustls-native-certs' .
-# Insecure use of an approved primitive (weak crypto — independent of FIPS):
-grep -REn 'modes\.ECB|MODE_ECB' .                        # AES-ECB leaks structure
-grep -REn 'PKCS1v15|PKCS1_v1_5' .                        # RSA v1.5 encryption = Bleichenbacher/Marvin; want OAEP/PSS
-grep -REn '^\s*import rsa\b|from rsa\b|\bpow\([^,]+,[^,]+,[^)]+\)|divmod' .  # hand-rolled RSA / modexp, not constant-time
-grep -REn "\b(iv|nonce)\s*=\s*(b?['\"]|bytes\(|\\\\x00)" .  # static/hardcoded IV or nonce
-grep -REn 'key_size\s*=\s*(512|768|1024)' .              # weak RSA/DSA key (SP 800-131A floor: 2048)
-grep -REn '\b(DES|TripleDES|ARC4|ARC2|Blowfish|IDEA|CAST5|SEED|XOR)\b' .  # broken/legacy ciphers
-# TLS/PKI validation disabled (CWE-295):
-grep -REn 'verify\s*=\s*False|CERT_NONE|check_hostname\s*=\s*False|_create_unverified_context|wrap_socket' .
-grep -REn 'cert_reqs\s*=\s*.CERT_NONE|assert_hostname\s*=\s*False|SSL_VERIFYPEER|SSL_VERIFYHOST|verify_ssl\s*=\s*False|disable_warnings|InsecureRequestWarning' .
 # CA / trust-store overrides (system-integration class — swaps the OS trust store):
 grep -REn 'cafile\s*=|capath\s*=|cadata\s*=|ca_certs\s*=|ca_cert_dir\s*=|CAINFO|CAPATH|REQUESTS_CA_BUNDLE|CURL_CA_BUNDLE|load_verify_locations' .
-grep -REn 'AutoAddPolicy|WarningPolicy' .                # paramiko SSH host-key not verified
-# Timing-unsafe secret comparison — use hmac.compare_digest:
-grep -REn '\b(mac|hmac|sig|signature|digest|token)\b.*[!=]=|[!=]=.*\b(mac|hmac|sig|signature|digest|token)\b' .
+# Weak/insecure-crypto greps (ECB, RSA v1.5, IV reuse, weak keys, legacy ciphers,
+# verify=False, timing-unsafe compare) + the source linters: reference/weak-crypto.md.
 ```
 
-## Crypto scanners (source pass)
+## Crypto scanners (source pass) — see `weak-crypto.md`
 
-grep is the fallback; a crypto-aware linter is faster and more precise. These
-scan **Python source** for crypto/TLS/PKI misuse — run one as a first pass, then
-read the hits. They cover the *weak-crypto* class well but, by construction,
-**cannot decide FIPS approval** (see the caveat below).
-
-- **[`ruff`](https://docs.astral.sh/ruff/rules/#flake8-bandit-s) — preferred.** Its
-  flake8-bandit group reimplements Bandit under the **same codes**; no install
-  friction: `uvx ruff check --select S .`. Crypto/TLS/PKI-relevant rules:
-  `S324`/`S303` (MD5/SHA-1 hashes), `S304` (DES/RC4/Blowfish/IDEA/CAST5/SEED),
-  `S305` (ECB mode), `S311` (`random` for security), `S505` (RSA/DSA <2048, EC
-  <224), `S501` (`verify=False`), `S502`/`S503` (SSLv2/3, TLSv1/1.1),
-  `S504` (`wrap_socket` no version), `S507` (paramiko `AutoAddPolicy`).
-- **[`bandit`](https://bandit.readthedocs.io)** — the original; ruff has ported all
-  of its crypto checks, so it adds nothing here unless you need custom AST plugins.
-- **[`semgrep`](https://semgrep.dev/p/crypto)** (`semgrep --config p/crypto`) —
-  closes ruff's real crypto gaps with dataflow rules ruff/bandit lack: **RSA
-  PKCS#1 v1.5 vs OAEP** (CWE-780), **static/reused IV/nonce**, and
-  **unauthenticated CBC/CTR without a MAC**. Add it when those matter.
-
-**What no source linter catches — resolve by hand (this skill's job):**
-timing-unsafe `==` on MACs/tokens, hand-rolled RSA/modexp, and — the crux for
-FIPS — cryptographically **strong but non-approved** primitives
-(ChaCha20-Poly1305, BLAKE2/3, X25519, scrypt/Argon2/bcrypt): a linter stays silent
-because they aren't "weak," yet they fail FIPS. Vendored/static crypto, bundled CA
-stores, and hardcoded ciphersuites that bypass crypto-policies need the binary pass
-(`binary-inspection.md`) and steps 6-7, not a source linter.
+The source-linter guidance (ruff `--select S`, semgrep `p/crypto`, bandit) that finds
+the weak-crypto class now lives in [`weak-crypto.md`](weak-crypto.md) → "Find it." Run a
+linter as the first pass, then read the hits. Linters find *weak* use but **cannot
+decide FIPS approval** — strong-but-non-approved primitives (ChaCha20-Poly1305, BLAKE,
+X25519, scrypt/Argon2) stay silent yet fail FIPS (`fips-primer.md`).

@@ -118,24 +118,11 @@ as **actually broken** (fix everywhere).
 
 ### Approved ≠ used securely (insecure crypto, independent of FIPS)
 
-A primitive can be on the approved list and still be broken *as used*. These are
-weak-crypto findings the audit must raise even on a FIPS host — flag them as their
-own class (SKILL step 8), not as FIPS-140 violations:
-
-- **AES-ECB for data is broken.** ECB is approved as a bare primitive (it appears in
-  FIPS 197 / SP 800-38A) but leaks plaintext structure — identical blocks encrypt
-  identically (the "ECB penguin"). Flag any ECB use for confidentiality; want an
-  AEAD (AES-GCM) or at least CBC/CTR with a random IV.
-- **RSA needs modern padding.** Use **OAEP for encryption** and **PSS for
-  signatures**. **PKCS#1 v1.5 *encryption* is Bleichenbacher-vulnerable** (adaptive
-  chosen-ciphertext / Marvin timing oracle); textbook/"raw" RSA (no padding) is
-  worse. v1.5 *signatures* are legacy-tolerated but PSS is preferred. Flag
-  `PKCS1v15()` for encryption and any unpadded RSA.
-- **Don't hand-roll RSA (or any primitive).** A pure-Python `pow(m, e, n)` /
-  `divmod`-based modexp is not constant-time; message/exponent blinding narrows but
-  does not close the side channel, and such code invariably lacks padding, RNG, and
-  parameter checks. Flag hand-written RSA and the pure-Python `rsa` package; use a
-  vetted library binding a validated module (`python-audit.md`).
+A primitive can be on the approved list and still be broken *as used* — AES-ECB, RSA
+PKCS#1 v1.5 encryption, hand-rolled RSA/modexp, static IV/nonce, timing-unsafe
+comparison, weak key sizes, disabled TLS verification. These are **weak-crypto findings
+raised even on a FIPS host** — a separate class (SKILL step 8), not FIPS-140 violations.
+The full treatment (with greps and linters) is in [`weak-crypto.md`](weak-crypto.md).
 
 ## Minimum key sizes & curves (SP 800-131A Rev. 2)
 

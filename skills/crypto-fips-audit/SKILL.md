@@ -56,7 +56,8 @@ Scope to the one you need (step 1); each builds on the one before it:
 2. **Does it use insecure / weak crypto?** — the **security** lens, *independent of
    FIPS*: broken hashes, AES-ECB, RSA padding, static IV/nonce, `random` for
    secrets, timing-unsafe compares, disabled TLS verification, weak keys. Run a
-   linter first (step 3); finding class 3 below.
+   linter first (step 3); finding class 3 below. Dedicated lens:
+   `reference/weak-crypto.md`.
 3. **Is it FIPS 140-3 compliant?** — the **approval** lens: non-approved
    algorithms, the validated-module requirement, provenance, crypto-policies, PQC.
    The most involved path — all steps apply; finding classes 1–2 below.
@@ -113,7 +114,7 @@ Report these as **distinct** categories; conflating them overstates FIPS-140 ris
    encryption (Bleichenbacher/Marvin) instead of OAEP/PSS, hand-rolled RSA/modexp,
    static IVs/nonces, `random` for secrets, `==` on secrets instead of
    `hmac.compare_digest`. These pass a FIPS *algorithm* check but are still real
-   vulnerabilities — raise them even on a FIPS host. `reference/fips-primer.md`.
+   vulnerabilities — raise them even on a FIPS host. `reference/weak-crypto.md`.
 
 ## Audit the artifact you ship, not the project name
 
@@ -170,13 +171,20 @@ the problematic-package table in `reference/python-audit.md`.
 
 ## 3. Python source review
 
+**Don't flag crypto in test code.** Test suites deliberately use weak/known-bad values
+(negative tests, known-answer vectors — e.g. MD5, a static IV, an expired cert — to
+prove a failure path). Audit shipped/runtime code; treat `tests/`, `conftest.py`,
+fixtures, and `examples/` as out of scope unless that code is actually imported at
+runtime or ships in the wheel.
+
 Grep and read the Python source. Full behavior, the per-package table, and the
 `usedforsecurity` nuance are in `reference/python-audit.md`; the algorithm
-verdicts are in `reference/fips-primer.md`. For a fast first pass run a crypto-aware
-linter — `uvx ruff check --select S .` (preferred; add `semgrep --config p/crypto`
-for RSA-padding/IV gaps) — then read the hits. A linter finds *weak* crypto but
-**cannot decide FIPS approval** (strong-but-non-approved primitives stay silent);
-that judgement is the steps below. Look for:
+verdicts are in `reference/fips-primer.md`; the **weak-crypto class (use case 2)** —
+insecure *use*, greps, and linters — is in `reference/weak-crypto.md`. For a fast first
+pass run a crypto-aware linter — `uvx ruff check --select S .` (preferred; add
+`semgrep --config p/crypto` for RSA-padding/IV gaps) — then read the hits. A linter
+finds *weak* crypto but **cannot decide FIPS approval** (strong-but-non-approved
+primitives stay silent); that judgement is the steps below. Look for:
 
 ```bash
 grep -REn 'hashlib\.(md5|sha1|new)|usedforsecurity' .   # weak/ambiguous hashing
@@ -344,7 +352,7 @@ the algorithm class / standard it implicates, and a remediation:
 - **Insecure use of an approved primitive (weak crypto)** — AES-ECB, RSA PKCS#1
   v1.5 encryption / unpadded RSA, hand-rolled modexp, static IVs/nonces, `random`
   for secrets, non-constant-time secret comparison. Approved algorithm, broken
-  use — a real vulnerability independent of FIPS.
+  use — a real vulnerability independent of FIPS. Full lens: `reference/weak-crypto.md`.
 - **Context-dependent** — a non-approved primitive (BLAKE/xxhash/murmurhash) or a
   restricted one (SHA-1) whose verdict depends on whether it feeds a **security**
   decision. State the use you found; recommend `usedforsecurity=False` or an

@@ -43,6 +43,7 @@ policy moves. Verify every finding against the sources linked in `SKILL.md`.
 | `reference/fips-primer.md` | What FIPS 140-3 governs; approved vs non-approved per class; key sizes/curves; counterintuitive cases; `usedforsecurity`; PQC; standards map. |
 | `reference/fips-140-3-and-openssl.md` | 140-2 → 140-3 for devs/packagers; added/removed/constrained algorithm tables; use-scoping (XTS-at-rest, GCM IV); OpenSSL provider model + RHEL mapping; practical PQC hybrids; a podman recipe to verify FIPS behavior in a container. |
 | `reference/python-audit.md` | Stdlib under FIPS + the problematic-PyPI-package table + grep starting points. |
+| `reference/weak-crypto.md` | The weak/insecure-crypto class (use case 2), independent of FIPS — AES-ECB, RSA padding, IV reuse, timing, weak keys, `random` for secrets, disabled TLS verification, legacy ciphers; greps + source linters. |
 | `reference/native-crypto.md` | Validated vs compliant vs capable; approved providers; why vendoring breaks the boundary; per-language build flags; provenance; CA trust. |
 | `reference/binary-inspection.md` | Per-format binary inspection (CLI + pyelftools/macholib/pefile); posture model; embedded SBOM; limitations; tooling. |
 | `reference/trust-store.md` | Which regime governs a bundled CA store (`certifi`/`webpki-roots`) — distro packaging policy + STIG/CC, not FIPS or crypto-policies; failure modes; provenance; remediation. |
