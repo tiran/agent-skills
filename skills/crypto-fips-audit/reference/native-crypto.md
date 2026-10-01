@@ -186,6 +186,13 @@ reference for it:
 
 ### Rust — providers, vendoring, trust store
 
+> **For a deeper Rust dive** — a full audit **and** the remediation playbook (replace
+> `ring`, the four system-OpenSSL migration paths, PQC, trust store, crypto-policies),
+> whether the Rust is a standalone service **or** shipped inside a Python wheel
+> (maturin/PyO3 extension, or a Rust dependency) — see the
+> [`rust-crypto-fips`](../../rust-crypto-fips/SKILL.md) skill. The notes here are the quick
+> Rust pointer within a Python-package audit.
+
 > **Choosing a Rust TLS backend for FIPS + PQC on RHEL** (the recurring question, e.g.
 > migrating a `rustls` + `ring` service). Bind **system OpenSSL 3.5** (the `openssl` /
 > `openssl-sys` crate with `OPENSSL_NO_VENDOR=1`), *not* a rustls-bundled backend — then

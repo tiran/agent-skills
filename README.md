@@ -28,6 +28,7 @@ metadata, then compiled-extension and ABI ports, then release and auditing:
 | [`ship-type-information`](skills/ship-type-information/) | Exp | Ship **verified type info** — annotate untyped code, add **`py.typed`**, generate **`.pyi` stubs** for C/C++/Rust extensions, verify with mypy/pyright/ty/pyrefly + `stubtest`, and package so the wheel carries them. |
 | [`secure-python-release-pipeline`](skills/secure-python-release-pipeline/) | Exp | A secure **GitHub Actions** build/release pipeline — sdist + wheels (cibuildwheel), **Trusted Publisher** to PyPI, minimal permissions, zizmor. |
 | [`crypto-fips-audit`](skills/crypto-fips-audit/) | Beta | Audit a Python package — and any **C/C++/Go/Rust** it ships — for its cryptography: inventory usage, find **insecure/weak crypto**, and assess **FIPS 140-3** compliance. Source-first, confirmed against the built artifact. Gathers evidence; does not certify. |
+| [`rust-crypto-fips`](skills/rust-crypto-fips/) | Exp | Audit **and remediate** a **Rust** project's TLS/crypto for **FIPS 140-3**, **PQC**, the **system trust store**, and **system crypto-policies** — and **replace `ring`**. The rustls `CryptoProvider` model (bundled `aws-lc-rs`/`ring` vs a **system-OpenSSL-backed** provider), the four migration paths (`rustls-native-ossl` swap, `native-tls`, direct `openssl`, rewrite), `X25519MLKEM768` vs `SecP256r1MLKEM768`, and Cargo-graph + binary detection. The Rust companion to `crypto-fips-audit`. |
 
 **Status** reflects how battle-tested a skill is:
 

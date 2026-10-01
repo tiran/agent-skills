@@ -178,16 +178,20 @@ verifying type info (`py.typed`, `.pyi` stubs, the checkers).
 
 ## Crypto / FIPS auditing
 
-Grounding for [`crypto-fips-audit`](crypto-fips-audit/SKILL.md). The **authorities
-on FIPS itself are NIST and Red Hat** (linked from that skill's `SKILL.md`), not
-any tool — the repo below is a reference for evidence-gathering *mechanics*, not
-for FIPS policy interpretation.
+Grounding for [`crypto-fips-audit`](crypto-fips-audit/SKILL.md) and the Rust-focused
+[`rust-crypto-fips`](rust-crypto-fips/SKILL.md). The **authorities on FIPS itself are
+NIST and Red Hat** (linked from those skills' `SKILL.md`), not any tool — the repos
+below are references for evidence-gathering *mechanics* and the system-OpenSSL
+remediation path, not for FIPS policy interpretation.
 
 | Repo | Author | Worth studying for |
 | --- | --- | --- |
 | [`EmilienM/wheel-crypto-scan`](https://github.com/EmilienM/wheel-crypto-scan) (Apache-2.0) | Emilien Macchi (Red Hat) | Deterministic scanner that gathers crypto evidence from built wheels — Python AST + ELF/Mach-O/PE symbols & strings (`pyelftools`), Go build info, Rust crate paths, embedded SBOM — behind a data-driven ruleset with a FIPS lens. The reference implementation for the skill's binary-inspection step (linkage posture model, "banner needs corroboration"). Docs: <https://my1.fr/wheel-crypto-scan/>. **Credit it when using its output**; treat its docs/ruleset as authoritative on mechanism, not on FIPS. |
 | [`openshift/check-payload`](https://github.com/openshift/check-payload) (Apache-2.0) | Red Hat / OpenShift | The Go-and-container counterpart: scans a container payload, node, or local binary and validates the FIPS build regime. Its `internal/validations/validations.go` `validateGo*` chain is the skill's reference for the Go decision tree (native Go FIPS module #5247 vs. golang-fips OpenSSL bridge; **CGO required for the bridge, skipped for the native module**; dynamic link, `strictfipsruntime`, `no_openssl`). Built for RHSB-2023-001. Authoritative on the Go/OpenShift build mechanics, not on FIPS policy. |
 | [`sethmlarson/truststore`](https://github.com/sethmlarson/truststore) | Seth Michael Larson | Verifies against the OS trust store through an `ssl.SSLContext` drop-in (`truststore.SSLContext`; `inject_into_ssl()` for apps) — the default in pip 24.2+, Python 3.10+. The remedy the skill recommends for a bundled-CA (system-integration) finding. |
+| [`native-ossl`](https://akamu.dev/native-ossl/doc/) (FreeIPA) | Alexander Bokovoy & Simo Sorce (Red Hat) | An idiomatic EVP-only Rust wrapper over the **system** OpenSSL 3.5+ (always dynamically linked, never vendored). Its `rustls-native-ossl` crate is a rustls `CryptoProvider` that routes TLS crypto through the system module — the least-intrusive FIPS/crypto-policy remediation in [`rust-crypto-fips`](rust-crypto-fips/SKILL.md). `ring-native-ossl` is a `ring`-compatible API backed by native-ossl (OpenSSL). Pre-1.0 (`0.3.x`) — pin exact versions. |
+| [`rustls`](https://github.com/rustls/rustls) / [`aws-lc-rs`](https://github.com/aws/aws-lc-rs) | rustls project / AWS | The pluggable `CryptoProvider` model (`aws_lc_rs` default, `ring`), the `fips`/`prefer-post-quantum` features, and `default_fips_provider()` — the backend behaviour `rust-crypto-fips` audits. Reference for *how rustls selects crypto*, not for FIPS policy. |
+| [`astral-sh/uv` #21537](https://github.com/astral-sh/uv/pull/21537) / [`tiran/uv@rustls-native-ossl`](https://github.com/tiran/uv/tree/rustls-native-ossl) | uv project / tiran | Worked example of both remediation shapes for `rust-crypto-fips`: a `native-tls` (whole-stack OpenSSL) feature and an `ossl` (`rustls-native-ossl` provider-swap) feature on `uv-client`. **Both unmerged** — study the approach, don't cite as shipping. |
 
 ## Build backends (by example)
 
