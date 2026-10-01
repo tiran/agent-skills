@@ -219,18 +219,23 @@ separate [`port-to-free-threaded-python`](../port-to-free-threaded-python/) skil
 breaking the static `PyModuleDef`. PEP 793 replaces `PyInit_` with
 **`PyModExport_<name>`** returning a `PySlot[]` (required `Py_mod_abi` via
 `PyABIInfo_VAR`, plus `Py_mod_name` / `_doc` / `_state_size` / `_methods` / `_slots`
-and the state traverse/clear/free funcs); build with **`Py_TARGET_ABI3T`**
-(`0x030f0000`). Consequences — opaque `PyObject` (separate data struct + **negative
-`basicsize`**), no `PyModuleDef` (module **tokens**), no variable-size types — are in
-`reference/module-init.md`. Keep the step-6 path under `#else` so one source still
-builds `abi3` for ≤3.14.
+and the state traverse/clear/free funcs); gate it on **`Py_TARGET_ABI3T`**
+(`0x030f0000`). Don't `#define` that macro yourself with a real build tool — setting
+`limited_api`/`py-api` and building on a free-threaded interpreter defines it for you
+(`Py_LIMITED_API` + `Py_GIL_DISABLED` ⇒ `Py_TARGET_ABI3T`); define it manually only as
+the step-8 fallback for a tool without abi3t support. Consequences — opaque `PyObject`
+(separate data struct + **negative `basicsize`**), no `PyModuleDef` (module **tokens**),
+no variable-size types — are in `reference/module-init.md`. Keep the step-6 path under
+`#else` so one source still builds `abi3` for ≤3.14.
 
 ## 8. Build system: flags and wheel tags
 
 Set the define and emit the right tag / `.so` suffix. Per-backend recipes:
 `reference/build-systems.md`. In brief:
 
-- **meson-python** — `py.extension_module(..., limited_api: '3.12')`.
+- **meson-python** — `py.extension_module(..., limited_api: '3.12')`; for `abi3.abi3t`
+  need ≥ 0.21.0, build on free-threaded 3.15+, and bump `limited_api` to `'3.15'` there
+  (keyed off `Py_GIL_DISABLED`; no newer meson needed).
 - **scikit-build-core** — `wheel.py-api = "cp312"` (or `"cp315.cp315t"` for abi3t).
 - **maturin** (PyO3) — Cargo `abi3-py312` / `abi3t-py315`; one build per ABI family.
 - **setuptools** — `Extension(..., py_limited_api=True, define_macros=[("Py_LIMITED_API",
