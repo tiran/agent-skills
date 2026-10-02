@@ -171,13 +171,16 @@ or AWS-LC): **RHEL 9.8+** enables it via the `DEFAULT:PQ` crypto-policy subpolic
 `fips` provider is still 3.0.7 (no ML-KEM), so PQC runs from the default provider,
 outside the validated module. Details in `fips-140-3-and-openssl.md`.
 
-**`X25519MLKEM768` hybrid** (X25519 + ML-KEM-768) dominates real TLS deployment
-(Chrome/Firefox/OpenSSL 3.5/Go 1.24). Its FIPS status is **genuinely disputed**:
-usable when the validated boundary *includes* X25519 (Go blog, AWS-LC, rustls), but
-Go's strict **`fips140=only` rejects the X25519 primitive** and breaks the
-handshake. Practical rule: acceptable under a validated boundary that includes it;
-**prefer `SecP256r1MLKEM768`** (P-256 share) where strict FIPS is required. For
-*good non-FIPS crypto*, still prefer a hybrid PQC handshake over classical-only.
+**`X25519MLKEM768` hybrid** (ML-KEM-768 + X25519) dominates real TLS deployment
+(Chrome/Firefox/OpenSSL 3.5/Go). It **is FIPS-approvable**: SP 800-56Cr2 lets a shared
+secret `Z = S1‖S2` with **S1 from an approved scheme**, so placing the approved
+**ML-KEM-768 first** (X25519 as the auxiliary S2) satisfies it, and **OpenSSL 3.5's FIPS
+provider marks it `fips=yes`** ([RFC 10024](https://www.rfc-editor.org/info/rfc10024/)).
+The remaining caveats are *policy and provider*, not the algorithm: Go's strict
+**`fips140=only` still rejects the X25519 primitive**, and a validated **certified
+ML-KEM** must actually be present. **Prefer `SecP256r1MLKEM768`** (both halves approved)
+only where a policy refuses X25519 hybrids. For *good non-FIPS crypto*, prefer a hybrid
+PQC handshake over classical-only.
 
 ## Standards quick map (for a finding's citation)
 
