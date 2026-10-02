@@ -175,23 +175,29 @@ from **SP 800-52 (TLS) / 800-77 (IPsec) / 800-111 (storage)** and, operationally
 
 ## 5. Practical PQC: which hybrids are actually usable
 
-RFC 10024 defines three TLS 1.3 hybrid KEMs (ECDHE + ML-KEM). The catch is that the
-**common one is not strict-FIPS**, and the **FIPS one is barely deployed client-side**:
+RFC 10024 defines three TLS 1.3 hybrid KEMs (ECDHE + ML-KEM). The nuance: the common
+one (X25519MLKEM768) **is FIPS-approvable** despite X25519 being unapproved — the
+approved **ML-KEM-768 is placed first** per SP 800-56C — but some strict policies still
+refuse it, and the P-curve alternative is barely deployed client-side:
 
-| Group (code) | Composition | IANA "Recommended" | Strict-FIPS? | Deployed where |
+| Group (code) | Composition | IANA "Recommended" | FIPS-approvable? | Deployed where |
 | --- | --- | --- | --- | --- |
-| **X25519MLKEM768** (0x11EC) | X25519 + ML-KEM-768 | **Y** | **No** — X25519 not NIST-approved | **Default everywhere**: Chrome, Firefox, Safari, Edge, Cloudflare, OpenSSL 3.5, Go; ~95% of PQ connections |
-| **SecP256r1MLKEM768** (0x11EB) | P-256 + ML-KEM-768 | N | **Yes** (both NIST-approved; SP 800-56Cr2 ordering) | Server/enterprise/federal only — **browsers don't offer it by default** |
+| **X25519MLKEM768** (0x11EC) | **ML-KEM-768 first** + X25519 | **Y** | **Yes** — ML-KEM-768 first (SP 800-56C); OpenSSL 3.5 FIPS `fips=yes`. *Some strict policies refuse it (Go `fips140=only`).* | **Default everywhere**: Chrome, Firefox, Safari, Edge, Cloudflare, OpenSSL 3.5, Go; ~95% of PQ connections |
+| **SecP256r1MLKEM768** (0x11EB) | P-256 + ML-KEM-768 | N | **Yes** (both approved; the safe pick where X25519 hybrids are refused) | Server/enterprise/federal only — **browsers don't offer it by default** |
 | **SecP384r1MLKEM1024** (0x11ED) | P-384 + ML-KEM-1024 | N | Yes (CNSA 2.0 strength) | rare; high-assurance |
 
 The practical tension:
 
-- **X25519MLKEM768** is what browsers and CDNs negotiate, but its X25519 primitive
-  fails a strict boundary (e.g. Go **`fips140=only` rejects it**). Fine for *good*
-  PQC; **not** for strict-FIPS.
-- **SecP256r1MLKEM768** is the strict-FIPS choice, **but mainstream clients don't send
-  it**, so a FIPS server that only offers it typically falls back to **classical**
-  (no PQC) with real browsers.
+- **X25519MLKEM768** is what browsers and CDNs negotiate, and it **is FIPS-approvable**:
+  SP 800-56Cr2 allows `Z = S1‖S2` with **S1 from an approved scheme**, so placing the
+  approved **ML-KEM-768 first** (X25519 as the auxiliary S2) satisfies it, and **OpenSSL
+  3.5's FIPS provider marks it `fips=yes`** ([RFC 10024](https://www.rfc-editor.org/info/rfc10024/)
+  ties all three groups to SP 800-56C). The caveats are *policy and provider*, not the
+  algorithm: some strict modes still refuse it (Go **`fips140=only`**; some distro FIPS
+  policies), and it needs a validated **certified ML-KEM** to actually run (below).
+- **SecP256r1MLKEM768** has **both** halves approved, so it's the pick where a policy
+  refuses X25519 hybrids — **but mainstream clients don't send it**, so a server offering
+  only it typically falls back to **classical** (no PQC) with real browsers.
 - **CDN reality — edge PQC is X25519MLKEM768 across the board.** **Akamai** documents
   **X25519MLKEM768 only**; **Fastly** auto-enables ML-KEM for TLS 1.3 clients (i.e.
   **X25519MLKEM768** in practice); and **Cloudflare's** PQC-support docs list
@@ -209,10 +215,12 @@ The practical tension:
   level, but whether *your* module is validated for it — and whether it's the one your
   platform actually validates — is a separate question (`native-crypto.md`).
 
-**Audit takeaway:** seeing `X25519MLKEM768` is good PQC hygiene but is **not** a
-strict-FIPS key exchange; a strict-FIPS deployment needs `SecP256r1MLKEM768` and must
-accept limited peer/CDN reach (or classical fallback). Report the hybrid actually
-negotiated and the boundary it needs, per `fips-primer.md` → Post-quantum.
+**Audit takeaway:** `X25519MLKEM768` is both good PQC hygiene **and** FIPS-approvable
+(ML-KEM-768 first; OpenSSL 3.5 `fips=yes`) — treat it as FIPS-capable **unless** the
+target policy refuses X25519 hybrids (e.g. Go `fips140=only`) or the validated module
+lacks certified ML-KEM, in which case use `SecP256r1MLKEM768` and accept limited peer/CDN
+reach. Report the hybrid actually negotiated and the boundary it needs, per
+`fips-primer.md` → Post-quantum.
 
 ## 6. Verify FIPS behavior in a container (no FIPS host needed)
 

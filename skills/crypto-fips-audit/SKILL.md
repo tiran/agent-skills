@@ -339,10 +339,12 @@ prove absence of crypto, so report it for review, never as "clean".
   policy in (`addFIPSMounts()`); a stock/distroless image or plain Docker can run
   non-FIPS userspace on a FIPS kernel. `reference/native-crypto.md`.
 - **PQC** — the FIPS PQC standards are FIPS 203 (ML-KEM), 204 (ML-DSA), 205
-  (SLH-DSA). The `X25519MLKEM768` hybrid is acceptable *only under a validated
-  boundary that includes X25519* — it fails Go's strict `fips140=only`. Prefer
-  `SecP256r1MLKEM768` where strict FIPS is required. Good non-FIPS crypto should
-  still prefer the hybrid handshake. `reference/fips-primer.md`.
+  (SLH-DSA). The `X25519MLKEM768` hybrid **is FIPS-approvable** — SP 800-56C lets the
+  approved **ML-KEM-768 go first** with X25519 as the auxiliary secret, and OpenSSL 3.5
+  FIPS marks it `fips=yes`; X25519 is not a disqualifier. Caveats are *policy and
+  provider*: some strict modes still refuse it (Go `fips140=only`) and it needs a
+  validated certified ML-KEM — prefer `SecP256r1MLKEM768` only there. Good non-FIPS
+  crypto should prefer the hybrid handshake regardless. `reference/fips-primer.md`.
 
 ## 8. Classify findings and report
 
