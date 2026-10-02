@@ -70,9 +70,12 @@ This stage alone gets you a working **`abi3`** module. Stop here unless step 2 c
 
 Free-threaded 3.15 makes `PyObject` opaque, so the static `PyModuleDef` (which
 extends `PyObject`) can't exist. PEP 793 replaces `PyInit_` with
-**`PyModExport_<name>`**, which returns a **slot array** instead of an object. Build
-with **`Py_TARGET_ABI3T`** (`0x030f0000`), which implies `Py_LIMITED_API` +
-`Py_GIL_DISABLED`. Keep the stage-2 path under `#else` so one source still builds
+**`PyModExport_<name>`**, which returns a **slot array** instead of an object. Gate the
+new path on **`Py_TARGET_ABI3T`** (`0x030f0000`). You normally don't `#define` it: a
+build tool that targets abi3t sets `Py_LIMITED_API` and builds on a free-threaded
+interpreter, and `Py_LIMITED_API` + `Py_GIL_DISABLED` ⇒ `Py_TARGET_ABI3T` (which in
+turn guarantees `Py_GIL_DISABLED`). Define it by hand only as the fallback for a tool
+without abi3t support. Keep the stage-2 path under `#else` so one source still builds
 `abi3` for ≤3.14.
 
 ```c
@@ -104,6 +107,23 @@ PyMODEXPORT_FUNC PyModExport_mymod(void) { return mymod_slotarray; }
 logic into `Py_mod_create`/`Py_mod_exec`. Leave out fields that were absent, **except
 `Py_mod_abi`, which is mandatory**. Only **one** `Py_mod_exec` is allowed (merge
 multiple exec functions).
+
+**`Py_mod_abi` vs `PyABIInfo_Check`.** `PyABIInfo_VAR(abi_info)` builds a static struct
+describing the ABI you compiled against (stable? GIL / free-threaded / agnostic? build +
+abi version); the `Py_mod_abi` slot hands it to the interpreter, which validates it
+**after** the hook returns — so a hook that only returns static data needs nothing more.
+`PyABIInfo_Check(&abi_info, "modname")` is the *runtime* guard that performs that same
+comparison *early*, setting an exception and returning `< 0` on mismatch (a clean
+`ImportError` instead of a crash). Call it **only** if the hook runs C API before
+returning — i.e. it does more than `return slots`:
+
+```c
+PyMODEXPORT_FUNC PyModExport_mymod(void) {
+    if (PyABIInfo_Check(&abi_info, "mymod") < 0) return NULL;  /* ABI mismatch: don't touch the C API */
+    /* ...minimal C API, must not rely on the GIL... */
+    return mymod_slotarray;
+}
+```
 
 ### Consequences you must handle
 
